@@ -1,0 +1,63 @@
+{
+  "id": "quantum.plugin.calendar",
+  "version": "3.0.0",
+  "entryAssembly": "Quantum.CalendarPlugin.dll",
+  "database": {
+    "migrations": "./migrations"
+  },
+  "ui": {
+    "routes": [
+      {
+        "path": "/plugins/calendar",
+        "component": "Quantum.OfficialPlugins.Calendar.UI.Pages.Calendar",
+        "title": "日历",
+        "titles": {
+          "en-US": "Calendar"
+        },
+        "icon": "日",
+        "order": 100,
+        "showInNavigation": true,
+        "iconFile": "icons/plugin.ico"
+      }
+    ]
+  },
+  "web": {
+    "head": [
+      "<link rel=\"stylesheet\" href=\"_content/quantum.plugin.calendar/Quantum.CalendarPlugin.bundle.scp.css\">"
+    ],
+    "postBlazor": []
+  },
+  "capabilities": {
+    "provides": [
+      "calendar.create",
+      "calendar.created",
+      "calendar.deleted",
+      "calendar.updated",
+      "calendar.delete",
+      "calendar.get",
+      "calendar.list",
+      "calendar.list-tasks",
+      "calendar.mobile-refresh",
+      "calendar.set-completed",
+      "calendar.update"
+    ],
+    "notifications": {
+      "calendar.created": {
+        "description": "A calendar item was created.",
+        "messageSchema": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" } }, "required": ["id"] }
+      },
+      "calendar.updated": {
+        "description": "A calendar item was updated.",
+        "messageSchema": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" } }, "required": ["id"] }
+      },
+      "calendar.deleted": {
+        "description": "A calendar item was deleted.",
+        "messageSchema": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" } }, "required": ["id"] }
+      }
+    },
+    "requires": [],
+    "integrates": [
+      "ledger.by-calendar-entry"
+    ]
+  }
+}

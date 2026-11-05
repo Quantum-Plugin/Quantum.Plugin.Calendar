@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="NOF.Infrastructure.EntityFrameworkCore" />
+    <Using Include="Xunit" />
+    <Using Include="Quantum.Plugin.Abstraction" />
+    <ProjectReference Include="../../src/Quantum.CalendarPlugin/Quantum.CalendarPlugin.csproj" />
+    <None Include="../../src/Quantum.CalendarPlugin/plugin.json" Link="plugin-manifests/calendar.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Quantum.CalendarPlugin/UI/Localization/PluginStrings*.resx" Link="localization/calendar/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Quantum.CalendarPlugin/migrations/*.sql" Link="calendar-migrations/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
