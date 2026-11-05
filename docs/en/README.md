@@ -17,3 +17,14 @@ pwsh .ci/Build.ps1
 The build helper creates a validated archive in artifacts. Extract it for the Quantum plugin loader; keep the manifest and wwwroot alongside the assembly. [CI](glossary.md#ci) verifies Windows and Linux.
 
 [Apache License 2.0](../../LICENSE) · [NOTICE](../../NOTICE)
+
+## Development standards
+
+Follow the [English development standards](../../.standards/docs/en/README.md). The .standards submodule records the exact reviewed revision; upstream changes apply only after an explicit update of that recorded commit. Initialize it before development:
+
+```sh
+git submodule update --init --recursive
+python .standards/.ci/check-adoption.py
+```
+
+Keep both language editions aligned. AGENTS.md links to the adopted English entry point; project-specific instructions supplement the shared requirements.

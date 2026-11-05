@@ -17,3 +17,14 @@ pwsh .ci/Build.ps1
 构建工具在 artifacts 中生成经过验证的压缩包，解压后交给 Quantum 插件加载器；清单和 wwwroot 须与程序集一起保留。[CI](glossary.md#ci) 验证 Windows 和 Linux。
 
 [Apache License 2.0](../../LICENSE) · [NOTICE](../../NOTICE)
+
+## 开发规范
+
+遵循[简体中文开发规范](../../.standards/docs/zh-CN/README.md)。.standards 子模块记录经过审查的确切版本；上游变更只有在显式更新该提交后才生效。开发前初始化：
+
+```sh
+git submodule update --init --recursive
+python .standards/.ci/check-adoption.py
+```
+
+同步维护两种语言。AGENTS.md 指向采用的英文入口，项目专属指令补充共享规范。
