@@ -14,6 +14,7 @@ public sealed class CalendarPluginInitializer : IAssemblyInitializer
         services.AddRpcServer<CalendarRpcService>();
         services.AddScoped<CalendarEntryOperations>();
         services.AddSingleton<CalendarChangeNotifications>();
+        services.AddSingleton<CalendarSchedulingExtensions>();
         services.AddScoped<ICalendarMobilePages, CalendarMobilePages>();
         services.AddSingleton<CalendarMobileSync>();
         services.AddScoped<ICalendarRpcServiceClient, LocalCalendarRpcServiceClient>();

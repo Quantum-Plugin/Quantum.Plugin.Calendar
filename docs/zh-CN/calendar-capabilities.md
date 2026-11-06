@@ -60,3 +60,7 @@
 ## 存储升级
 
 宿主在迁移 001、002 后执行 `003_event_recurrence.sql`，仅新增重复列，已有条目默认为不重复，保留 ID 与内容。此[迁移](glossary.md#migration)为增量变更，不含数据回填或破坏性清理。升级前保留宿主常规数据库备份。回退应用可恢复旧插件；旧插件仅查询原有列，但不能展开新创建的重复系列。保留新增列，后续数据迁移另行评审。
+
+[日程扩展契约](scheduling-extensions.md)
+
+第 5 版的内置与外部重复规则使用同一个贡献目录。通用模式贡献的 `repeatRuleId` 使用匹配的 `repeatPattern` 及保存的参数，有限日期贡献使用 `repeatPattern=None`；上表 None 的单次日程含义适用于未选择贡献规则的情况。`adjustmentRuleId` 独立控制事件或任务是否采用贡献的调休映射。`calendar.entry.list` 还支持 `seriesPage`，按有界分页读取原始存储日程，不展开或计算外部规则。恢复方式和兼容性详见日程扩展契约。

@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>Quantum.CalendarPlugin</PackageId>
-    <Version>4.0.0</Version>
+    <Version>5.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

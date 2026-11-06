@@ -28,4 +28,4 @@ pwsh .ci/Build.ps1
 | 私有实例字段前缀 | dotnet_naming_rule.private_fields_should_be_camel_case |
 | 四空格与行尾 | indent_style, indent_size, end_of_line, insert_final_newline |
 
-SDK 兼容范围声明于 [.ci/sdk-version-support.txt](../../.ci/sdk-version-support.txt)。兼容检查使用相同的 rc.3 构建产物，分别加载公开发布的 rc.2、rc.3 SDK 运行时，并在测试进程内断言实际 SDK 版本。生成的安装包附带发布元数据与 SHA-256 校验值。
+SDK 兼容范围声明于 [.ci/sdk-version-support.txt](../../.ci/sdk-version-support.txt)。兼容检查使用相同的 rc.3 构建产物，加载公开发布的 rc.3 SDK 运行时，并在测试进程内断言实际 SDK 版本。生成的安装包附带发布元数据与 SHA-256 校验值。

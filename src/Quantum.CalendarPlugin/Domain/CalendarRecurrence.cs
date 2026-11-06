@@ -4,14 +4,15 @@ namespace Quantum.OfficialPlugins.Calendar.Domain;
 
 public static class CalendarRecurrence
 {
-    public static void Validate(CalendarEntryKind kind, DateOnly date, CalendarRepeatPattern pattern, int interval, CalendarWeekdays weekdays, int? weekOfMonth, DateOnly? until, int? count)
+    public static void Validate(CalendarEntryKind kind, DateOnly date, CalendarRepeatPattern pattern, int interval, CalendarWeekdays weekdays, int? weekOfMonth, DateOnly? until, int? count, string? ruleId = null)
     {
+        CalendarScheduleSelection.ValidateId(ruleId);
         if (!Enum.IsDefined(pattern) || interval is < 1 or > 999 || ((int)weekdays & ~127) != 0 || (weekOfMonth is not null && weekOfMonth is not (-1 or 1 or 2 or 3 or 4 or 5)) || count is < 1 or > 10000 || until < date || (until is not null && count is not null))
         {
             throw new DomainException("calendar_invalid_request", "The recurrence rule is invalid.");
         }
 
-        if ((kind == CalendarEntryKind.Task && pattern != CalendarRepeatPattern.None) || (pattern != CalendarRepeatPattern.Weekly && weekdays != CalendarWeekdays.None) || (pattern != CalendarRepeatPattern.MonthlyWeekday && weekOfMonth is not null) || (pattern == CalendarRepeatPattern.Weekdays && interval != 1) || (pattern == CalendarRepeatPattern.None && (interval != 1 || until is not null || count is not null)))
+        if ((kind == CalendarEntryKind.Task && (pattern != CalendarRepeatPattern.None || ruleId is not null)) || (pattern != CalendarRepeatPattern.Weekly && weekdays != CalendarWeekdays.None) || (pattern != CalendarRepeatPattern.MonthlyWeekday && weekOfMonth is not null) || (pattern == CalendarRepeatPattern.Weekdays && interval != 1) || (pattern == CalendarRepeatPattern.None && (interval != 1 || (ruleId is null && (until is not null || count is not null)))))
         {
             throw new DomainException("calendar_invalid_request", "The recurrence options do not match the entry type or repeat pattern.");
         }
@@ -27,6 +28,17 @@ public static class CalendarRecurrence
 
     public static IEnumerable<DateOnly> Expand(CalendarRepeatPattern pattern, DateOnly anchor, int interval, CalendarWeekdays weekdays, int? weekOfMonth, DateOnly? until, int? occurrenceCount, DateOnly start, DateOnly end, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (pattern == CalendarRepeatPattern.None)
+        {
+            if (anchor >= start && anchor <= end && (until is null || anchor <= until))
+            {
+                yield return anchor;
+            }
+
+            yield break;
+        }
+
         var last = until is { } endDate && endDate < end ? endDate : end;
         var first = occurrenceCount is null && start > anchor ? start : anchor;
         var count = 0;

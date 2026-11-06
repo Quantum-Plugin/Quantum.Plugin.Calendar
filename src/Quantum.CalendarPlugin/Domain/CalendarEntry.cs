@@ -25,6 +25,8 @@ public sealed class CalendarEntry
     public TimeOnly? EndTime { get; private set; }
     public bool IsCompleted { get; private set; }
     public string Style { get; private set; } = "violet";
+    public string? RepeatRuleId { get; private set; }
+    public string? AdjustmentRuleId { get; private set; }
     public CalendarRepeatPattern RepeatPattern { get; private set; }
     public int RepeatInterval { get; private set; } = 1;
     public CalendarWeekdays RepeatWeekdays { get; private set; }
@@ -40,9 +42,10 @@ public sealed class CalendarEntry
         return new CalendarEntry(Guid.NewGuid(), title, notes, kind, date, startTime, endTime, style, timeProvider.GetUtcNow());
     }
 
-    public void Update(string title, string notes, CalendarEntryKind kind, DateOnly date, TimeOnly startTime, TimeOnly? endTime, string style, DateTimeOffset updatedAt, CalendarRepeatPattern repeatPattern = CalendarRepeatPattern.None, int repeatInterval = 1, CalendarWeekdays repeatWeekdays = CalendarWeekdays.None, int? repeatWeekOfMonth = null, DateOnly? repeatUntil = null, int? repeatCount = null)
+    public void Update(string title, string notes, CalendarEntryKind kind, DateOnly date, TimeOnly startTime, TimeOnly? endTime, string style, DateTimeOffset updatedAt, CalendarRepeatPattern repeatPattern = CalendarRepeatPattern.None, int repeatInterval = 1, CalendarWeekdays repeatWeekdays = CalendarWeekdays.None, int? repeatWeekOfMonth = null, DateOnly? repeatUntil = null, int? repeatCount = null, string? repeatRuleId = null, string? adjustmentRuleId = null)
     {
-        CalendarRecurrence.Validate(kind, date, repeatPattern, repeatInterval, repeatWeekdays, repeatWeekOfMonth, repeatUntil, repeatCount);
+        CalendarRecurrence.Validate(kind, date, repeatPattern, repeatInterval, repeatWeekdays, repeatWeekOfMonth, repeatUntil, repeatCount, repeatRuleId);
+        CalendarScheduleSelection.ValidateId(adjustmentRuleId);
         if (string.IsNullOrWhiteSpace(title))
         {
             throw new DomainException("calendar_invalid_request", "Title is required.");
@@ -93,19 +96,27 @@ public sealed class CalendarEntry
         StartTime = startTime;
         EndTime = kind == CalendarEntryKind.Event ? endTime : null;
         Style = normalizedStyle;
-        SetRecurrence(repeatPattern, repeatInterval, repeatWeekdays, repeatWeekOfMonth, repeatUntil, repeatCount);
+        SetRecurrence(repeatPattern, repeatInterval, repeatWeekdays, repeatWeekOfMonth, repeatUntil, repeatCount, repeatRuleId);
+        AdjustmentRuleId = adjustmentRuleId;
         UpdatedAt = updatedAt;
     }
 
-    public void SetRecurrence(CalendarRepeatPattern pattern, int interval = 1, CalendarWeekdays weekdays = CalendarWeekdays.None, int? weekOfMonth = null, DateOnly? until = null, int? count = null)
+    public void SetRecurrence(CalendarRepeatPattern pattern, int interval = 1, CalendarWeekdays weekdays = CalendarWeekdays.None, int? weekOfMonth = null, DateOnly? until = null, int? count = null, string? ruleId = null)
     {
-        CalendarRecurrence.Validate(Kind, Date, pattern, interval, weekdays, weekOfMonth, until, count);
+        CalendarRecurrence.Validate(Kind, Date, pattern, interval, weekdays, weekOfMonth, until, count, ruleId);
+        RepeatRuleId = ruleId;
         RepeatPattern = pattern;
         RepeatInterval = interval;
         RepeatWeekdays = weekdays;
         RepeatWeekOfMonth = weekOfMonth;
         RepeatUntil = until;
         RepeatCount = count;
+    }
+
+    public void SetAdjustment(string? ruleId)
+    {
+        CalendarScheduleSelection.ValidateId(ruleId);
+        AdjustmentRuleId = ruleId;
     }
 
     public void SetCompleted(bool isCompleted, DateTimeOffset updatedAt)

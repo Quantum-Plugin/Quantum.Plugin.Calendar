@@ -55,3 +55,21 @@ Stylesheets, including generated component-scoped bundles.
 ## Migration
 
 An ordered database schema change applied by the host while preserving existing data.
+
+<a id="extension-point"></a>
+
+## Extension point
+
+A host-attributed, versioned channel of optional plugin data. Its owner defines the payload contract; other plugins register, update or withdraw contributions without sharing executable business objects.
+
+<a id="json"></a>
+
+## JSON (JavaScript Object Notation)
+
+A text data format for objects, arrays, strings, numbers, booleans and null. A JSON schema describes the accepted structure; Calendar additionally checks date relationships and domain constraints.
+
+<a id="occurrence"></a>
+
+## Occurrence
+
+One instance of a stored calendar series. Its nominal date comes from the repeat rule; its actual date follows any explicitly selected adjustment. The pair of series ID and nominal date distinguishes instances that move to the same actual date.

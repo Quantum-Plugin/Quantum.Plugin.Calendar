@@ -23,6 +23,12 @@ public sealed record SaveCalendarEventRequest
     [Description("Color identifier: violet, blue, coral, or green.")]
     public required string Style { get; set; }
 
+    [Description("Optional host-attributed plugin-id/local-id from recurrence-rules, including built-in contributions. Pattern-backed rules require the matching RepeatPattern; finite date rules require None with default interval/weekday options.")]
+    public string? RepeatRuleId { get; set; }
+
+    [Description("Optional host-attributed plugin-id/local-id from the date-adjustments extension point. Null preserves original dates.")]
+    public string? AdjustmentRuleId { get; set; }
+
     [Description("Repeat pattern: None, Daily, Weekdays (Monday-Friday), Weekly, Monthly (same date), MonthlyWeekday (same ordinal weekday), MonthlyLastDay, or Yearly. Events only.")]
     public CalendarRepeatPattern RepeatPattern { get; set; }
 
@@ -49,6 +55,8 @@ public sealed record SaveCalendarEventRequest
         StartTime = StartTime,
         EndTime = EndTime,
         Style = Style,
+        RepeatRuleId = RepeatRuleId,
+        AdjustmentRuleId = AdjustmentRuleId,
         RepeatPattern = RepeatPattern,
         RepeatInterval = RepeatInterval,
         RepeatWeekdays = RepeatWeekdays,
