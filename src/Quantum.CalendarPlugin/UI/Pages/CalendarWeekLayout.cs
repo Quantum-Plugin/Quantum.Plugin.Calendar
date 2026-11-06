@@ -14,7 +14,7 @@ internal static class CalendarWeekLayout
                 Start = Math.Min(entry.StartTime.ToTimeSpan().TotalMinutes, 1410),
                 End = Math.Min(1440, Math.Max(entry.EndTime?.ToTimeSpan().TotalMinutes ?? entry.StartTime.ToTimeSpan().TotalMinutes + 30, Math.Min(entry.StartTime.ToTimeSpan().TotalMinutes, 1410) + 30))
             })
-            .OrderBy(entry => entry.Start).ThenBy(entry => entry.End).ThenBy(entry => entry.Entry.Id);
+            .OrderBy(entry => entry.Start).ThenBy(entry => entry.End).ThenBy(entry => entry.Entry.Id).ThenBy(entry => entry.Entry.OriginalDate);
         var result = new List<WeekEventLayout>();
         var group = new List<WeekEventLayout>();
         var columnEnds = new List<double>();

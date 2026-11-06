@@ -33,4 +33,6 @@ python .standards/.ci/check-adoption.py
 
 [月视图与周视图](calendar-views.md)
 
-本版本面向已发布的 SDK `Quantum.Plugin.Abstraction` **0.3.0-rc.3**。发布时使用 `--sdk-version-support ">=0.3.0-rc.2 <0.4.0"`，兼容值表示宿主 SDK，而不是桌面应用版本。升级顺序见[版本说明](releases.md)。
+本版本面向已发布的 SDK `Quantum.Plugin.Abstraction` **0.3.0-rc.3**。发布时使用 `--sdk-version-support ">=0.3.0-rc.3 <0.4.0"`，兼容值表示宿主 SDK，而不是桌面应用版本。升级顺序见[版本说明](releases.md)。
+
+[日程扩展契约](scheduling-extensions.md)

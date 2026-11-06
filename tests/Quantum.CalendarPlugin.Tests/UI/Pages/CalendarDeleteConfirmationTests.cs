@@ -48,6 +48,8 @@ public sealed class CalendarDeleteConfirmationTests
             Assert.True(created.IsSuccess);
             var id = created.Value!.Id;
             var page = new CalendarPage(client);
+            await (Task)typeof(CalendarPage).GetMethod("ToggleSeriesAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(page, null)!;
+            Assert.Single((CalendarEntryDetails[])typeof(CalendarPage).GetField("_seriesItems", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(page)!);
             await ClickDelete(page, id, isTaskList);
             Assert.NotNull((await client.GetEntryAsync(new() { Id = id }, Context.Empty)).Value!.Entry);
             typeof(CalendarPage).GetMethod("HandleKeyDown", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(page, [new KeyboardEventArgs { Key = "Escape" }]);
@@ -60,6 +62,7 @@ public sealed class CalendarDeleteConfirmationTests
             Assert.NotNull((await client.GetEntryAsync(new() { Id = id }, Context.Empty)).Value!.Entry);
             await ClickDelete(page, id, isTaskList);
             Assert.Null((await client.GetEntryAsync(new() { Id = id }, Context.Empty)).Value!.Entry);
+            Assert.Empty((CalendarEntryDetails[])typeof(CalendarPage).GetField("_seriesItems", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(page)!);
         });
     }
 

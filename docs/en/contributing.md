@@ -28,4 +28,4 @@ Keep English and Simplified Chinese in separate, mutually linked files under doc
 | Private instance field prefix | dotnet_naming_rule.private_fields_should_be_camel_case |
 | Four spaces and line endings | indent_style, indent_size, end_of_line, insert_final_newline |
 
-SDK compatibility is declared in [.ci/sdk-version-support.txt](../../.ci/sdk-version-support.txt). The compatibility check runs unchanged rc.3-built plugin/test binaries with published SDK rc.2 and rc.3 runtimes, and asserts the SDK informational version inside each test process. Generated packages include release metadata and SHA-256 checksums.
+SDK compatibility is declared in [.ci/sdk-version-support.txt](../../.ci/sdk-version-support.txt). The compatibility check runs unchanged rc.3-built plugin/test binaries with published SDK rc.3 runtime, and asserts the SDK informational version inside each test process. Generated packages include release metadata and SHA-256 checksums.

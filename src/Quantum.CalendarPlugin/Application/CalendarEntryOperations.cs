@@ -6,7 +6,7 @@ using Quantum.Plugin.Abstraction;
 
 namespace Quantum.OfficialPlugins.Calendar.Application;
 
-public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, IDbContext database, TimeProvider timeProvider, CalendarChangeNotifications notifications)
+public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, IDbContext database, TimeProvider timeProvider, CalendarChangeNotifications notifications, CalendarSchedulingExtensions scheduling)
 {
     public async Task<Result<CalendarEntryDetails>> CreateAsync(SaveCalendarEntryRequest request, CancellationToken cancellationToken)
     {
@@ -14,6 +14,8 @@ public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, 
         ArgumentNullException.ThrowIfNull(request);
         var item = CalendarEntry.Create(request.Title, request.Notes, request.Kind, request.Date, request.StartTime, request.EndTime, request.Style, timeProvider);
         SetRecurrence(item, request);
+        item.SetAdjustment(request.AdjustmentRuleId);
+        CalendarScheduleResolver.Validate(Details(item), scheduling.Capture());
         await entries.AddAsync(item, cancellationToken);
         await database.SaveChangesAsync(cancellationToken);
         await notifications.PublishAsync(Notification(item, "created"), item.Id);
@@ -29,7 +31,11 @@ public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, 
         }
 
         var item = await FindAsync(id, kind, context, cancellationToken);
-        item.Update(request.Title, request.Notes, request.Kind, request.Date, request.StartTime, request.EndTime, request.Style, timeProvider.GetUtcNow(), request.RepeatPattern, request.RepeatInterval, request.RepeatWeekdays, request.RepeatWeekOfMonth, request.RepeatUntil, request.RepeatCount);
+        var candidate = CalendarEntry.Create(request.Title, request.Notes, request.Kind, request.Date, request.StartTime, request.EndTime, request.Style, timeProvider);
+        SetRecurrence(candidate, request);
+        candidate.SetAdjustment(request.AdjustmentRuleId);
+        CalendarScheduleResolver.Validate(Details(candidate), scheduling.Capture());
+        item.Update(request.Title, request.Notes, request.Kind, request.Date, request.StartTime, request.EndTime, request.Style, timeProvider.GetUtcNow(), request.RepeatPattern, request.RepeatInterval, request.RepeatWeekdays, request.RepeatWeekOfMonth, request.RepeatUntil, request.RepeatCount, request.RepeatRuleId, request.AdjustmentRuleId);
         await database.SaveChangesAsync(cancellationToken);
         await notifications.PublishAsync(Notification(item, "updated"), item.Id);
         return Details(item);
@@ -81,7 +87,12 @@ public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, 
             throw new DomainException("calendar_invalid_request", "End date cannot be earlier than start date.");
         }
 
-        if (request.EndDate.DayNumber - request.StartDate.DayNumber >= 3660)
+        if (request.SeriesPage is < 0 or > 100000)
+        {
+            throw new DomainException("calendar_invalid_request", "The stored-series page is invalid.");
+        }
+
+        if (request.SeriesPage is null && request.EndDate.DayNumber - request.StartDate.DayNumber >= 3660)
         {
             throw new DomainException("calendar_invalid_request", "A calendar query cannot exceed 3,660 days.");
         }
@@ -91,7 +102,20 @@ public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, 
             throw new DomainException("calendar_invalid_request", "Invalid entry type.");
         }
 
-        var query = entries.AsNoTracking().Where(item => item.Date <= request.EndDate && (item.Date >= request.StartDate || item.RepeatPattern != CalendarRepeatPattern.None) && (item.RepeatUntil == null || item.RepeatUntil >= request.StartDate));
+        if (request.SeriesPage is { } page)
+        {
+            var stored = entries.AsNoTracking().Where(item => item.Date >= request.StartDate && item.Date <= request.EndDate);
+            if (kind is not null)
+            {
+                stored = stored.Where(item => item.Kind == kind);
+            }
+
+            var series = await stored.OrderBy(item => item.Date).ThenBy(item => item.Id).Skip(page * 100).Take(100).ProjectTo<CalendarEntryDetails>().ToArrayAsync(cancellationToken);
+            return series.Select(item => item with { SeriesStartDate = item.Date }).ToArray();
+        }
+
+        var snapshot = scheduling.Capture();
+        var query = entries.AsNoTracking().Where(item => item.AdjustmentRuleId != null || (item.Date <= request.EndDate && (item.Date >= request.StartDate || item.RepeatPattern != CalendarRepeatPattern.None || item.RepeatRuleId != null) && (item.RepeatUntil == null || item.RepeatUntil >= request.StartDate)));
         if (kind is not null)
         {
             query = query.Where(item => item.Kind == kind);
@@ -101,19 +125,18 @@ public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, 
         var occurrences = new List<CalendarEntryDetails>();
         foreach (var item in candidates)
         {
-            var series = item with { SeriesStartDate = item.Date };
-            foreach (var date in CalendarRecurrence.Expand(item.RepeatPattern, item.Date, item.RepeatInterval, item.RepeatWeekdays, item.RepeatWeekOfMonth, item.RepeatUntil, item.RepeatCount, request.StartDate, request.EndDate, cancellationToken))
+            foreach (var occurrence in CalendarScheduleResolver.Expand(item, snapshot, request.StartDate, request.EndDate, cancellationToken))
             {
                 if (occurrences.Count >= 10000)
                 {
                     throw new DomainException("calendar_invalid_request", "Too many calendar occurrences. Use a shorter date range.");
                 }
 
-                occurrences.Add(series with { Date = date });
+                occurrences.Add(occurrence);
             }
         }
 
-        return occurrences.OrderBy(item => item.Date).ThenBy(item => item.StartTime).ThenBy(item => item.Title).ThenBy(item => item.Id).ToArray();
+        return occurrences.OrderBy(item => item.Date).ThenBy(item => item.StartTime).ThenBy(item => item.Title).ThenBy(item => item.Id).ThenBy(item => item.OriginalDate).ToArray();
     }
 
     public async Task<Result<CalendarEntryDetails[]>> ListTasksAsync(ListCalendarTasksRequest request, CancellationToken cancellationToken)
@@ -125,8 +148,9 @@ public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, 
             query = query.Where(item => !item.IsCompleted);
         }
 
-        var items = await query.OrderBy(item => item.IsCompleted).ThenBy(item => item.Date).ThenBy(item => item.StartTime).ThenBy(item => item.Title).ProjectTo<CalendarEntryDetails>().ToArrayAsync(cancellationToken);
-        return items.Select(item => item with { SeriesStartDate = item.Date }).ToArray();
+        var items = await query.ProjectTo<CalendarEntryDetails>().ToArrayAsync(cancellationToken);
+        var snapshot = scheduling.Capture();
+        return items.SelectMany(item => CalendarScheduleResolver.Expand(item, snapshot, DateOnly.MinValue, DateOnly.MaxValue, cancellationToken)).OrderBy(item => item.IsCompleted).ThenBy(item => item.Date).ThenBy(item => item.StartTime).ThenBy(item => item.Title).ThenBy(item => item.Id).ToArray();
     }
 
     private async Task<CalendarEntry> FindAsync(Guid id, CalendarEntryKind? kind, Context context, CancellationToken cancellationToken)
@@ -142,5 +166,5 @@ public sealed class CalendarEntryOperations(IRepository<CalendarEntry> entries, 
 
     private static CalendarEntryDetails Details(CalendarEntry item) => Mapper.Current.Map<CalendarEntry, CalendarEntryDetails>(item) with { SeriesStartDate = item.Date };
     private static string Notification(CalendarEntry item, string action) => $"calendar.{(item.Kind == CalendarEntryKind.Event ? "event" : "task")}.{action}";
-    private static void SetRecurrence(CalendarEntry item, SaveCalendarEntryRequest request) => item.SetRecurrence(request.RepeatPattern, request.RepeatInterval, request.RepeatWeekdays, request.RepeatWeekOfMonth, request.RepeatUntil, request.RepeatCount);
+    private static void SetRecurrence(CalendarEntry item, SaveCalendarEntryRequest request) => item.SetRecurrence(request.RepeatPattern, request.RepeatInterval, request.RepeatWeekdays, request.RepeatWeekOfMonth, request.RepeatUntil, request.RepeatCount, request.RepeatRuleId);
 }

@@ -33,4 +33,6 @@ Keep both language editions aligned. AGENTS.md links to the adopted English entr
 
 [Month and week views](calendar-views.md)
 
-This release targets the published SDK `Quantum.Plugin.Abstraction` **0.3.0-rc.3**. Publish it with `--sdk-version-support ">=0.3.0-rc.2 <0.4.0"`; this compatibility value identifies the host SDK rather than the Desktop application version. See [release notes](releases.md) for upgrade ordering.
+This release targets the published SDK `Quantum.Plugin.Abstraction` **0.3.0-rc.3**. Publish it with `--sdk-version-support ">=0.3.0-rc.3 <0.4.0"`; this compatibility value identifies the host SDK rather than the Desktop application version. See [release notes](releases.md) for upgrade ordering.
+
+[Scheduling extension contracts](scheduling-extensions.md)

@@ -1,4 +1,4 @@
-param([string[]]$SdkVersions = @('0.3.0-rc.2', '0.3.0-rc.3'))
+param([string[]]$SdkVersions = @('0.3.0-rc.3'))
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 $root = Split-Path $PSScriptRoot -Parent

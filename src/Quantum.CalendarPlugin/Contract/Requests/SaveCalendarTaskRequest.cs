@@ -20,6 +20,9 @@ public sealed record SaveCalendarTaskRequest
     [Description("Color identifier: violet, blue, coral, or green.")]
     public required string Style { get; set; }
 
+    [Description("Optional date-adjustments contribution ID. Null preserves the original due date.")]
+    public string? AdjustmentRuleId { get; set; }
+
     internal SaveCalendarEntryRequest ToEntry() => new()
     {
         Title = Title,
@@ -28,6 +31,7 @@ public sealed record SaveCalendarTaskRequest
         Date = Date,
         StartTime = StartTime,
         EndTime = null,
-        Style = Style
+        Style = Style,
+        AdjustmentRuleId = AdjustmentRuleId
     };
 }

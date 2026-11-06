@@ -60,3 +60,7 @@ A list request accepts at most 3660 inclusive days and returns at most 10000 occ
 ## Storage upgrade
 
 The host applies `003_event_recurrence.sql` after migrations 001 and 002. It only adds repeat columns with non-repeating defaults, preserving existing IDs and contents. The [migration](glossary.md#migration) is additive and contains no backfill or destructive cleanup. Retain the normal host database backup before upgrading. To revert the application, restore the previous plugin; its existing-column queries ignore the added fields, but it cannot expand newly created series. Keep the database columns until a separately reviewed data migration.
+
+[Scheduling extension contracts](scheduling-extensions.md)
+
+In version 5, built-in and external recurrence rules share the same contribution catalog. A pattern-backed `repeatRuleId` uses its matching `repeatPattern` and saved parameters; a finite-date contribution uses `repeatPattern=None`. The None row above describes entries without a contributed rule. `adjustmentRuleId` independently opts an event or task into a contributed date mapping. `calendar.entry.list` additionally supports `seriesPage` for bounded access to original stored series without expanding or evaluating external rules. See the scheduling extension contract for recovery and compatibility details.

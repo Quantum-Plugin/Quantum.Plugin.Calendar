@@ -13,3 +13,5 @@ Overlapping events appear in separate columns. Connected overlap groups share a 
 The timeline initially scrolls to 08:00 or the earliest earlier event. It retains manual vertical scrolling while the same week remains open. At narrow widths, the timeline has its own horizontal and vertical scroll areas, keeps the time ruler and day/task headers visible, and reveals the selected day when opening the view or selecting another day. The day panel and task list stack beneath the calendar. Month view retains its existing calendar grid and month animation.
 
 View behavior and layout are owned by `Calendar.Views.cs`, `CalendarWeekLayout.cs` and `WeekEventLayout.cs` under [UI](glossary.md#ui)/Pages. The plugin adds no view-specific capability or database migration. Tests cover boundary ranges, navigation, repeated-event editing, overlap placement, rendered controls and scroll behavior. Run the checks in [Development](contributing.md); temporary visual previews and acceptance screenshots belong outside the source repository.
+
+[Scheduling extension contracts](scheduling-extensions.md)
