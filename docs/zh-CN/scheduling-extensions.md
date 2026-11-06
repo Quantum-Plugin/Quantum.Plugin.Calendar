@@ -11,7 +11,9 @@
 | `quantum.plugin.calendar/recurrence-rules` | [重复规则结构](../contracts/recurrence-rules.v1.schema.json) | 通用模式预设或有限的原定日期集合，例如指定教学周的周一。 |
 | `quantum.plugin.calendar/date-adjustments` | [调休结构](../contracts/date-adjustments.v1.schema.json) | 在明确覆盖范围内，将原定日期映射到实际日期；null 表示取消该次实例。 |
 
-宿主提供贡献方的 `PluginId` 和 `LocalId`，日程保存二者组合成的 `plugin-id/local-id`，精确区分大小写；数据内容不能冒充其他贡献方。更新学期或来源数据时应保留稳定标识。标题不能为空，最多 120 个字符，界面按文本显示标题和来源标识。日期格式为 `yyyy-MM-dd`，不包含时区。未知字段会被忽略以支持兼容性扩展。契约版本必须为 1，其他版本不参与计算。
+扩展点完整标识带有所属插件命名空间：`quantum.plugin.calendar/recurrence-rules` 和 `quantum.plugin.calendar/date-adjustments`。`Define("recurrence-rules", 1)` 只接收局部名，是因为 SDK 会自动加上宿主认定的当前插件标识；`Register` 和 `Observe` 则始终使用完整扩展点标识。其他插件即使定义相同局部名，也属于不同扩展点。不要保存或解析裸局部名，也不要在调用 `Define` 时重复添加命名空间。
+
+宿主提供贡献方的 `PluginId` 和 `LocalId`，日程保存二者组合成的 `plugin-id/local-id`，精确区分大小写；数据内容不能冒充其他贡献方。例如 `example.school/term` 与 `example.company/term` 可以同时存在，标题和局部名相同也不会导致选择或撤回一个时影响另一个；数据中的 `id`、`pluginId` 等字段不能替代宿主标注的身份。更新学期或来源数据时应保留稳定标识。标题不能为空，最多 120 个字符，界面按文本显示标题和来源标识。日期格式为 `yyyy-MM-dd`，不包含时区。未知字段会被忽略以支持兼容性扩展。契约版本必须为 1，其他版本不参与计算。
 
 重复规则必须且只能采用以下一种形态：`pattern` 形态声明 `Daily`、`Weekdays`、`Weekly`、`Monthly`、`MonthlyWeekday`、`MonthlyLastDay` 或 `Yearly`，并可提供默认 `interval`（1–999，缺省为 1；Weekdays 必须为 1），不能同时包含 `dates`；有限日期形态包含 1–10,000 个不重复的 `dates`，不能同时包含 `pattern` 或 `interval`，输入顺序不限，由日历排序。有限日期形态表示一个完整的有限模式。贡献方将教学周、学期边界、单双周等规则计算成不同的可选日期集合，日历不解释这些概念。SDK 的 128 KiB 数据上限同时有效，可能先于数量上限达到。空日期集无效；规则消失时应撤回贡献。有限日期模式即使在编辑器中选择“永不”结束，也不会生成超出所发布集合的日期。通用模式预设使用日程保存的间隔、星期、月内序号及结束条件；贡献中的间隔用于编辑器初始值，不覆盖既有日程已经保存的参数。
 

@@ -9,6 +9,44 @@ public sealed class CalendarScheduleResolverTests
 {
     private static readonly DateOnly Anchor = new(2026, 11, 6);
 
+    [Fact]
+    public void SameLocalRecurrenceIdsRemainIsolatedByContributorNamespace()
+    {
+        var host = new SchedulingExtensionHost();
+        using var service = new CalendarSchedulingExtensions(host);
+        service.Start();
+        var school = SchedulingExtensionHost.Contribution("example.school", "term", """{"title":"Term","dates":["2026-11-06","2026-11-13"]}""");
+        var company = SchedulingExtensionHost.Contribution("example.company", "term", """{"title":"Term","id":"example.school/term","pluginId":"example.school","dates":["2026-11-06","2026-11-20"]}""");
+        host.Publish(CalendarSchedulingExtensions.RecurrencePoint, school, company);
+        var schoolEntry = Entry() with { RepeatRuleId = "example.school/term" };
+        var companyEntry = schoolEntry with { RepeatRuleId = "example.company/term" };
+        var snapshot = service.Capture();
+        Assert.Equal(new[] { Anchor, Anchor.AddDays(7) }, Expand(schoolEntry, snapshot, Anchor, Anchor.AddDays(30)).Select(item => item.Date));
+        Assert.Equal(new[] { Anchor, Anchor.AddDays(14) }, Expand(companyEntry, snapshot, Anchor, Anchor.AddDays(30)).Select(item => item.Date));
+        host.Publish(CalendarSchedulingExtensions.RecurrencePoint, company);
+        Assert.Throws<DomainException>(() => Expand(schoolEntry, service.Capture(), Anchor, Anchor.AddDays(30)));
+        Assert.Equal(new[] { Anchor, Anchor.AddDays(14) }, Expand(companyEntry, service.Capture(), Anchor, Anchor.AddDays(30)).Select(item => item.Date));
+        Assert.Throws<DomainException>(() => CalendarScheduleSelection.ValidateId("term"));
+    }
+
+    [Fact]
+    public void SameLocalAdjustmentIdsCannotOverrideOrSubstituteForAnotherNamespace()
+    {
+        var host = new SchedulingExtensionHost();
+        using var service = new CalendarSchedulingExtensions(host);
+        service.Start();
+        var school = SchedulingExtensionHost.Contribution("example.school", "shifts", """{"title":"Shifts","validFrom":"2026-01-01","validUntil":"2026-12-31","changes":[{"date":"2026-11-06","targetDate":"2026-11-07"}]}""");
+        var company = SchedulingExtensionHost.Contribution("example.company", "shifts", """{"title":"Shifts","id":"example.school/shifts","pluginId":"example.school","validFrom":"2026-01-01","validUntil":"2026-12-31","changes":[{"date":"2026-11-06","targetDate":"2026-11-08"}]}""");
+        host.Publish(CalendarSchedulingExtensions.AdjustmentPoint, school, company);
+        var schoolEntry = Entry() with { AdjustmentRuleId = "example.school/shifts" };
+        var companyEntry = schoolEntry with { AdjustmentRuleId = "example.company/shifts" };
+        Assert.Equal(Anchor.AddDays(1), Assert.Single(Expand(schoolEntry, service.Capture(), Anchor, Anchor.AddDays(2))).Date);
+        Assert.Equal(Anchor.AddDays(2), Assert.Single(Expand(companyEntry, service.Capture(), Anchor, Anchor.AddDays(2))).Date);
+        host.Publish(CalendarSchedulingExtensions.AdjustmentPoint, company);
+        Assert.Throws<DomainException>(() => Expand(schoolEntry, service.Capture(), Anchor, Anchor.AddDays(2)));
+        Assert.Equal(Anchor.AddDays(2), Assert.Single(Expand(companyEntry, service.Capture(), Anchor, Anchor.AddDays(2))).Date);
+    }
+
     [Theory]
     [InlineData("daily", 2026, 11, 6)]
     [InlineData("weekdays", 2026, 11, 6)]

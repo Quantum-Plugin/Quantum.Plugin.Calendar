@@ -2,14 +2,14 @@
 
 [简体中文](../zh-CN/releases.md) · [Project guide](README.md)
 
-## 5.0.0 (unreleased)
+## 5.0.0
 
 - Add neutral, version-1 recurrence-rules and date-adjustments extension points, independent per-entry opt-in, contributor lifecycle observation and desktop selection. Calendar includes no statutory, school or company policy. See [scheduling extensions](scheduling-extensions.md) for schemas and examples.
 - Register all eight built-in repeat presets as ordinary contributions alongside external rules, with a single editor catalog and resolver. Preserve legacy stored fields through an adapter. Pattern presets and finite-date contributions share the version-1 contract.
 - Add nullable `RepeatRuleId`/`AdjustmentRuleId` through migration 004. List results preserve nominal `OriginalDate` alongside actual `Date`; all existing entries retain their original behavior.
 - **Breaking host compatibility:** require SDK `>=0.3.0-rc.3 <0.4.0`; rc.2 lacks the runtime extension API. Upgrade the host first. Build against the unchanged published rc.3 pin. Consumers editing extended events must preserve both new selectors and recognize `RepeatRuleId` as repetition even when `RepeatPattern=None`.
 - Back up application data before upgrading. Migration 004 is additive: leave its columns in place on application rollback. After creating extended entries, restore the pre-upgrade backup when downgrading; older readers cannot calculate or safely edit those schedules. Do not modify released migrations or delete entries as a rollback shortcut.
-- Validation includes real SQLite migration/round trips through generated clients, contributor lifecycle and malformed data, cross-window moves, cancellations, collision identity and UI rule preservation. The release remains unpublished until normal review and required CI checks complete.
+- Validation includes real SQLite migration/round trips through generated clients, contributor lifecycle and malformed data, cross-window moves, cancellations, collision identity and UI rule preservation.
 
 ## 4.0.0
 

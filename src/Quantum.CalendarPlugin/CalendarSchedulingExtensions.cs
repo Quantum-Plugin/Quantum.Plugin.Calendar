@@ -46,6 +46,7 @@ public sealed class CalendarSchedulingExtensions(IQuantumExtensions? extensions 
         try
         {
             var generation = ++_generation;
+            // The SDK scopes local definitions to this plugin; consumers use the full point IDs above.
             _handles.Add(extensions.Define("recurrence-rules", ContractVersion));
             _handles.Add(extensions.Define("date-adjustments", ContractVersion));
             foreach (var rule in CalendarBuiltInRecurrence.Rules.Values.OrderBy(rule => rule.Order))
