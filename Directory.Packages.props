@@ -4,7 +4,7 @@
     <NofVersion>11.0.0-nightly.1473609.75efa591</NofVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Quantum.Plugin.Abstraction" Version="[0.3.0-rc.2]" />
+    <PackageVersion Include="Quantum.Plugin.Abstraction" Version="[0.3.0-rc.3]" />
     <PackageVersion Include="Microsoft.Extensions.Localization" Version="10.0.7" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.7" />

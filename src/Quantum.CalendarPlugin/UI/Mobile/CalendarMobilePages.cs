@@ -52,7 +52,7 @@ public sealed class CalendarMobilePages : ICalendarMobilePages
                 var detail = Ui.VStack("detail-" + id, Ui.Text("item-" + id, item.Title), Ui.Text("time-" + id, $"{item.Date:MM-dd} · {item.StartTime:HH:mm}").Appearance("caption"));
                 if (item.Kind == CalendarEntryKind.Task && !item.IsCompleted)
                 {
-                    items.Add(Ui.HStack("row-" + id, detail, Ui.Button("complete-" + id, L("Done")).OnClick(Ui.Request("calendar.set-completed").Constant("id", item.Id.ToString()).Constant("isCompleted", true))));
+                    items.Add(Ui.HStack("row-" + id, detail, Ui.Button("complete-" + id, L("Done")).OnClick(Ui.Request("calendar.task.set-completed").Constant("id", item.Id.ToString()).Constant("isCompleted", true))));
                 }
                 else
                 {
@@ -77,7 +77,7 @@ public sealed class CalendarMobilePages : ICalendarMobilePages
             items.RemoveAt(items.Count - 1);
         }
 
-        var form = Ui.VStack("task-form", Ui.Text("form-title", L("Add a task for today")).Appearance("title"), Ui.HStack("task-main", Ui.TextField("task-title").Hint(L("Title")).Limit(120), Ui.Button("create", L("Add task")).OnClick(Ui.Request("calendar.create").Input("title", "task-title").Input("notes", "task-notes").Constant("kind", "Task").Constant("date", today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Constant("startTime", "12:00:00").Constant("endTime", (string?)null).Constant("style", "violet"))), Ui.TextField("task-notes").Hint(L("Notes")).Limit(1000), Ui.Text("task-help", today.ToString("MM-dd", CultureInfo.InvariantCulture) + " · 12:00").Appearance("caption"));
+        var form = Ui.VStack("task-form", Ui.Text("form-title", L("Add a task for today")).Appearance("title"), Ui.HStack("task-main", Ui.TextField("task-title").Hint(L("Title")).Limit(120), Ui.Button("create", L("Add task")).OnClick(Ui.Request("calendar.task.create").Input("title", "task-title").Input("notes", "task-notes").Constant("date", today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Constant("startTime", "12:00:00").Constant("style", "violet"))), Ui.TextField("task-notes").Hint(L("Notes")).Limit(1000), Ui.Text("task-help", today.ToString("MM-dd", CultureInfo.InvariantCulture) + " · 12:00").Appearance("caption"));
         _pages.Publish(Ui.Page("calendar", L("Calendar"), Ui.Scroll("scroll", Ui.VStack("root", Ui.Text("date", L("Desktop date") + " · " + today.ToString("MM-dd ddd", CultureInfo.CurrentUICulture)).Appearance("caption"), Ui.VStack("items", items.ToArray()), form))));
     }
 

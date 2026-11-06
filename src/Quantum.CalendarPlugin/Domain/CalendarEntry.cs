@@ -25,6 +25,12 @@ public sealed class CalendarEntry
     public TimeOnly? EndTime { get; private set; }
     public bool IsCompleted { get; private set; }
     public string Style { get; private set; } = "violet";
+    public CalendarRepeatPattern RepeatPattern { get; private set; }
+    public int RepeatInterval { get; private set; } = 1;
+    public CalendarWeekdays RepeatWeekdays { get; private set; }
+    public int? RepeatWeekOfMonth { get; private set; }
+    public DateOnly? RepeatUntil { get; private set; }
+    public int? RepeatCount { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -34,8 +40,9 @@ public sealed class CalendarEntry
         return new CalendarEntry(Guid.NewGuid(), title, notes, kind, date, startTime, endTime, style, timeProvider.GetUtcNow());
     }
 
-    public void Update(string title, string notes, CalendarEntryKind kind, DateOnly date, TimeOnly startTime, TimeOnly? endTime, string style, DateTimeOffset updatedAt)
+    public void Update(string title, string notes, CalendarEntryKind kind, DateOnly date, TimeOnly startTime, TimeOnly? endTime, string style, DateTimeOffset updatedAt, CalendarRepeatPattern repeatPattern = CalendarRepeatPattern.None, int repeatInterval = 1, CalendarWeekdays repeatWeekdays = CalendarWeekdays.None, int? repeatWeekOfMonth = null, DateOnly? repeatUntil = null, int? repeatCount = null)
     {
+        CalendarRecurrence.Validate(kind, date, repeatPattern, repeatInterval, repeatWeekdays, repeatWeekOfMonth, repeatUntil, repeatCount);
         if (string.IsNullOrWhiteSpace(title))
         {
             throw new DomainException("calendar_invalid_request", "Title is required.");
@@ -86,11 +93,28 @@ public sealed class CalendarEntry
         StartTime = startTime;
         EndTime = kind == CalendarEntryKind.Event ? endTime : null;
         Style = normalizedStyle;
+        SetRecurrence(repeatPattern, repeatInterval, repeatWeekdays, repeatWeekOfMonth, repeatUntil, repeatCount);
         UpdatedAt = updatedAt;
+    }
+
+    public void SetRecurrence(CalendarRepeatPattern pattern, int interval = 1, CalendarWeekdays weekdays = CalendarWeekdays.None, int? weekOfMonth = null, DateOnly? until = null, int? count = null)
+    {
+        CalendarRecurrence.Validate(Kind, Date, pattern, interval, weekdays, weekOfMonth, until, count);
+        RepeatPattern = pattern;
+        RepeatInterval = interval;
+        RepeatWeekdays = weekdays;
+        RepeatWeekOfMonth = weekOfMonth;
+        RepeatUntil = until;
+        RepeatCount = count;
     }
 
     public void SetCompleted(bool isCompleted, DateTimeOffset updatedAt)
     {
+        if (Kind != CalendarEntryKind.Task)
+        {
+            throw new DomainException("calendar_invalid_request", "Only tasks can be completed.");
+        }
+
         IsCompleted = isCompleted;
         UpdatedAt = updatedAt;
     }

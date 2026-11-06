@@ -28,3 +28,9 @@ python .standards/.ci/check-adoption.py
 ```
 
 Keep both language editions aligned. AGENTS.md links to the adopted English entry point; project-specific instructions supplement the shared requirements.
+
+[Calendar capabilities and repeating events](calendar-capabilities.md)
+
+[Month and week views](calendar-views.md)
+
+This release targets the published SDK `Quantum.Plugin.Abstraction` **0.3.0-rc.3**. Publish it with `--sdk-version-support ">=0.3.0-rc.2 <0.4.0"`; this compatibility value identifies the host SDK rather than the Desktop application version. See [release notes](releases.md) for upgrade ordering.

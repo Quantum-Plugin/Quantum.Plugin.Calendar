@@ -9,7 +9,9 @@ dotnet restore Quantum.Plugin.Calendar.slnx
 pwsh .ci/Format.ps1
 npm ci --prefix .ci
 npm run format --prefix .ci
+npm run test --prefix .ci
 dotnet test Quantum.Plugin.Calendar.slnx -c Release
+pwsh .ci/TestSdkCompatibility.ps1
 pwsh .ci/Build.ps1
 ```
 
@@ -25,3 +27,5 @@ Keep English and Simplified Chinese in separate, mutually linked files under doc
 | Static field PascalCase | dotnet_naming_rule.static_fields_should_be_pascal_case |
 | Private instance field prefix | dotnet_naming_rule.private_fields_should_be_camel_case |
 | Four spaces and line endings | indent_style, indent_size, end_of_line, insert_final_newline |
+
+SDK compatibility is declared in [.ci/sdk-version-support.txt](../../.ci/sdk-version-support.txt). The compatibility check runs unchanged rc.3-built plugin/test binaries with published SDK rc.2 and rc.3 runtimes, and asserts the SDK informational version inside each test process. Generated packages include release metadata and SHA-256 checksums.

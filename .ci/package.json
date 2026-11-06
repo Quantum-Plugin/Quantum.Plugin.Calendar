@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "format": "prettier --write \"../src/**/*.{js,css}\" \"../tests/**/*.mjs\" --no-error-on-unmatched-pattern --ignore-path ../.prettierignore",
-    "check": "prettier --check \"../src/**/*.{js,css}\" \"../tests/**/*.mjs\" --no-error-on-unmatched-pattern --ignore-path ../.prettierignore"
+    "check": "prettier --check \"../src/**/*.{js,css}\" \"../tests/**/*.mjs\" --no-error-on-unmatched-pattern --ignore-path ../.prettierignore",
+    "test": "node --test ../tests/Quantum.CalendarPlugin.Tests/UI/calendar-week.mjs"
   },
   "devDependencies": {
     "prettier": "3.6.2"

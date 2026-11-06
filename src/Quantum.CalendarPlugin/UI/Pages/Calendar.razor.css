@@ -18,6 +18,7 @@
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -30,6 +31,7 @@ button:disabled {
 }
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -532,6 +534,7 @@ textarea:focus-visible {
   font-size: 12px;
 }
 .entry-editor input,
+.entry-editor select,
 .entry-editor textarea {
   background: white;
   border: 1px solid var(--line);
@@ -811,5 +814,280 @@ textarea:focus-visible {
   }
   .outgoing-grid {
     display: none;
+  }
+}
+
+.recurrence-editor {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.recurrence-editor legend {
+  color: var(--muted);
+  font-size: 12px;
+}
+.repeat-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.repeat-days button {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 6px;
+}
+.repeat-days button[aria-pressed='true'] {
+  background: var(--selection);
+  color: var(--accent);
+}
+.recurrence-help {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.view-switch {
+  background: var(--hover);
+  border-radius: 8px;
+  display: flex;
+  justify-self: end;
+  padding: 3px;
+}
+.view-switch button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 30px;
+  padding: 5px 10px;
+}
+.view-switch button[aria-pressed='true'] {
+  background: white;
+  box-shadow: 0 1px 3px #3632490d;
+  color: var(--accent);
+}
+.week-board {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.week-board .month-navigation h2 {
+  font-size: 17px;
+}
+.week-viewport {
+  --hour-height: 64px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  position: relative;
+  scrollbar-color: var(--line) transparent;
+  scrollbar-width: thin;
+}
+.week-content {
+  min-width: 748px;
+  position: relative;
+}
+.week-summary,
+.week-timeline {
+  display: grid;
+  grid-template-columns: 48px repeat(7, minmax(0, 1fr));
+}
+.week-summary {
+  background: white;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+.week-task-label {
+  align-self: end;
+  color: var(--muted);
+  font-size: 10px;
+  padding: 8px 4px;
+  text-align: center;
+}
+.week-day-summary {
+  border-left: 1px solid var(--line);
+  min-width: 0;
+  padding: 4px;
+}
+.week-day-summary.selected,
+.week-day.selected {
+  background: #f8f6fc;
+}
+.week-date {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px;
+  width: 100%;
+}
+.week-date:hover {
+  background: var(--hover);
+}
+.week-date span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.week-date time {
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 24px;
+  min-width: 40px;
+}
+.week-day-summary.today time {
+  background: var(--accent);
+  color: white;
+}
+.week-date[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.week-task-list {
+  display: grid;
+  gap: 3px;
+  margin-top: 4px;
+  max-height: 76px;
+  min-height: 25px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.week-task {
+  background: white;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--item-color);
+  border-radius: 4px;
+  color: var(--ink);
+  font-size: 10px;
+  overflow: hidden;
+  padding: 4px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.week-task time {
+  color: var(--muted);
+}
+.week-task.completed {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.week-timeline {
+  height: calc(24 * var(--hour-height));
+}
+.week-time-ruler,
+.week-day {
+  min-width: 0;
+  position: relative;
+}
+.week-time-label {
+  box-sizing: border-box;
+  color: var(--muted);
+  font-size: 10px;
+  padding-right: 6px;
+  position: absolute;
+  text-align: right;
+  top: calc(var(--hour) * var(--hour-height));
+  transform: translateY(-50%);
+  width: 100%;
+}
+.week-time-label:first-child {
+  transform: none;
+}
+.week-day {
+  border-left: 1px solid var(--line);
+}
+.week-slot {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #eeeaf3;
+  box-sizing: border-box;
+  cursor: crosshair;
+  display: block;
+  height: var(--hour-height);
+  padding: 0;
+  width: 100%;
+}
+.week-slot:hover {
+  background: var(--hover);
+}
+.week-slot:focus-visible {
+  outline-offset: -3px;
+}
+.week-event {
+  background: #f1eef7;
+  background: color-mix(in srgb, var(--item-color) 13%, white);
+  border: 1px solid var(--item-color);
+  border-left-width: 3px;
+  border-radius: 5px;
+  box-sizing: border-box;
+  color: var(--ink);
+  height: calc(var(--event-duration) * var(--hour-height) / 60 - 3px);
+  left: calc(var(--event-column) * 100% / var(--event-columns) + 2px);
+  overflow: hidden;
+  padding: 2px 3px;
+  position: absolute;
+  text-align: left;
+  top: calc(var(--event-start) * var(--hour-height) / 60);
+  width: calc(100% / var(--event-columns) - 4px);
+  z-index: 1;
+}
+.week-event:hover {
+  filter: brightness(0.97);
+}
+.week-event time {
+  display: block;
+  font-size: 9px;
+  line-height: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.week-event-title {
+  display: block;
+  font-size: 11px;
+  line-height: 12px;
+  overflow-wrap: anywhere;
+}
+.week-repeat {
+  bottom: 2px;
+  color: var(--item-color);
+  font-size: 12px;
+  position: absolute;
+  right: 3px;
+}
+@media (max-width: 1100px) {
+  .month-navigation h2 {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+.week-time-ruler {
+  background: white;
+  left: 0;
+  position: sticky;
+  z-index: 2;
+}
+.week-task-label {
+  background: white;
+  left: 0;
+  position: sticky;
+  z-index: 4;
+}
+@media (max-width: 900px) {
+  .week-board {
+    min-height: 0;
+  }
+  .week-viewport {
+    height: min(65dvh, 560px);
+    min-height: 320px;
   }
 }

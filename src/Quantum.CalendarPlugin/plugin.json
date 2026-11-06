@@ -1,6 +1,6 @@
 {
   "id": "quantum.plugin.calendar",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "entryAssembly": "Quantum.CalendarPlugin.dll",
   "database": {
     "migrations": "./migrations"
@@ -10,11 +10,11 @@
       {
         "path": "/plugins/calendar",
         "component": "Quantum.OfficialPlugins.Calendar.UI.Pages.Calendar",
-        "title": "日历",
+        "title": "\u65e5\u5386",
         "titles": {
           "en-US": "Calendar"
         },
-        "icon": "日",
+        "icon": "\u65e5",
         "order": 100,
         "showInNavigation": true,
         "iconFile": "icons/plugin.ico"
@@ -29,30 +29,117 @@
   },
   "capabilities": {
     "provides": [
-      "calendar.create",
-      "calendar.created",
-      "calendar.deleted",
-      "calendar.updated",
-      "calendar.delete",
-      "calendar.get",
-      "calendar.list",
-      "calendar.list-tasks",
-      "calendar.mobile-refresh",
-      "calendar.set-completed",
-      "calendar.update"
+      "calendar.event.create",
+      "calendar.event.created",
+      "calendar.event.delete",
+      "calendar.event.deleted",
+      "calendar.event.get",
+      "calendar.event.list",
+      "calendar.event.update",
+      "calendar.event.updated",
+      "calendar.task.create",
+      "calendar.task.created",
+      "calendar.task.delete",
+      "calendar.task.deleted",
+      "calendar.task.get",
+      "calendar.task.list",
+      "calendar.task.update",
+      "calendar.task.updated",
+      "calendar.task.set-completed",
+      "calendar.mobile-page.refresh",
+      "calendar.entry.list",
+      "calendar.entry.get"
     ],
     "notifications": {
-      "calendar.created": {
-        "description": "A calendar item was created.",
-        "messageSchema": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" } }, "required": ["id"] }
+      "calendar.event.created": {
+        "description": "A calendar event was created.",
+        "messageSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
       },
-      "calendar.updated": {
-        "description": "A calendar item was updated.",
-        "messageSchema": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" } }, "required": ["id"] }
+      "calendar.event.updated": {
+        "description": "A calendar event was updated.",
+        "messageSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
       },
-      "calendar.deleted": {
-        "description": "A calendar item was deleted.",
-        "messageSchema": { "type": "object", "properties": { "id": { "type": "string", "format": "uuid" } }, "required": ["id"] }
+      "calendar.event.deleted": {
+        "description": "A calendar event was deleted.",
+        "messageSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "calendar.task.created": {
+        "description": "A calendar task was created.",
+        "messageSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "calendar.task.updated": {
+        "description": "A calendar task was updated.",
+        "messageSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "calendar.task.deleted": {
+        "description": "A calendar task was deleted.",
+        "messageSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
       }
     },
     "requires": [],

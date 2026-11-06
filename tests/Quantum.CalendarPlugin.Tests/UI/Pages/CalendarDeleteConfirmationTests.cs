@@ -44,7 +44,7 @@ public sealed class CalendarDeleteConfirmationTests
         await using var host = new LocalRpcHarness(builder.Services, typeof(ICalendarRpcService).Assembly);
         await host.UseClient<ICalendarRpcServiceClient>(async client =>
         {
-            var created = await client.CreateEntryAsync(new() { Title = "Confirmation fixture", Notes = "", Kind = CalendarEntryKind.Task, Date = DateOnly.FromDateTime(DateTime.Today), StartTime = new(12, 0), EndTime = null, Style = "green" }, Context.Empty);
+            var created = await client.CreateTaskAsync(new() { Title = "Confirmation fixture", Notes = "", Date = DateOnly.FromDateTime(DateTime.Today), StartTime = new(12, 0), Style = "green" }, Context.Empty);
             Assert.True(created.IsSuccess);
             var id = created.Value!.Id;
             var page = new CalendarPage(client);

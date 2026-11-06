@@ -49,3 +49,9 @@ Blazor pages, code-behind, styles and localized resources.
 ## CSS (Cascading Style Sheets)
 
 Stylesheets, including generated component-scoped bundles.
+
+<a id="migration"></a>
+
+## Migration
+
+An ordered database schema change applied by the host while preserving existing data.
