@@ -88,4 +88,44 @@
   <data name="Today's items" xml:space="preserve"><value>今日事项与未完成待办</value></data>
   <data name="Unable to load data. Reconnecting automatically." xml:space="preserve"><value>暂时无法加载数据，正在自动重连。</value></data>
   <data name="Done" xml:space="preserve"><value>完成</value></data>
+  <data name="Repeat" xml:space="preserve"><value>重复</value></data>
+  <data name="Repeat pattern" xml:space="preserve"><value>重复模式</value></data>
+  <data name="Does not repeat" xml:space="preserve"><value>不重复</value></data>
+  <data name="Every day" xml:space="preserve"><value>每天</value></data>
+  <data name="Every weekday (Monday-Friday)" xml:space="preserve"><value>每个工作日（周一至周五）</value></data>
+  <data name="Every week" xml:space="preserve"><value>每周</value></data>
+  <data name="Every two weeks" xml:space="preserve"><value>每两周</value></data>
+  <data name="Every month on the same date" xml:space="preserve"><value>每月同一天</value></data>
+  <data name="Every month on an ordinal weekday" xml:space="preserve"><value>每月第几个星期几</value></data>
+  <data name="Every year" xml:space="preserve"><value>每年</value></data>
+  <data name="Repeat interval" xml:space="preserve"><value>重复间隔</value></data>
+  <data name="Repeat on weekdays" xml:space="preserve"><value>选择重复的星期</value></data>
+  <data name="Week of month" xml:space="preserve"><value>每月第几周</value></data>
+  <data name="Same ordinal as start date" xml:space="preserve"><value>与起始日期相同的次序</value></data>
+  <data name="Last weekday of that name" xml:space="preserve"><value>每月最后一个相同星期几</value></data>
+  <data name="Ends" xml:space="preserve"><value>结束方式</value></data>
+  <data name="Never" xml:space="preserve"><value>永不结束</value></data>
+  <data name="On date" xml:space="preserve"><value>指定日期</value></data>
+  <data name="After occurrences" xml:space="preserve"><value>指定次数</value></data>
+  <data name="Last occurrence date (inclusive)" xml:space="preserve"><value>最后发生日期（含当天）</value></data>
+  <data name="Total occurrences" xml:space="preserve"><value>总次数</value></data>
+  <data name="The start date must match the repeat rule. Missing dates are skipped. Weekdays means Monday-Friday, without holiday adjustments." xml:space="preserve"><value>起始日期须符合重复规则。不存在的日期会跳过。工作日指周一至周五，不作节假日调休调整。</value></data>
+  <data name="Repeating event. Editing or deleting affects the entire series." xml:space="preserve"><value>重复日程：编辑或删除将作用于整个系列。</value></data>
+  <data name="The recurrence rule is invalid." xml:space="preserve"><value>重复规则无效。</value></data>
+  <data name="The recurrence options do not match the entry type or repeat pattern." xml:space="preserve"><value>重复选项与条目类型或重复模式不匹配。</value></data>
+  <data name="The series start date must match the recurrence rule." xml:space="preserve"><value>系列起始日期须符合重复规则。</value></data>
+  <data name="Only tasks can be completed." xml:space="preserve"><value>只有待办可以标记完成。</value></data>
+  <data name="A calendar query cannot exceed 3,660 days." xml:space="preserve"><value>日历查询范围不能超过 3,660 天。</value></data>
+  <data name="Too many calendar occurrences. Use a shorter date range." xml:space="preserve"><value>日程实例过多，请缩小查询日期范围。</value></data>
+  <data name="Every month on the last day" xml:space="preserve"><value>每月最后一天</value></data>
+  <data name="Week navigation" xml:space="preserve"><value>周导航</value></data>
+  <data name="Previous week" xml:space="preserve"><value>上一周</value></data>
+  <data name="Next week" xml:space="preserve"><value>下一周</value></data>
+  <data name="Calendar view" xml:space="preserve"><value>日历视图</value></data>
+  <data name="Month" xml:space="preserve"><value>月</value></data>
+  <data name="Week" xml:space="preserve"><value>周</value></data>
+  <data name="Week schedule" xml:space="preserve"><value>每周日程</value></data>
+  <data name="Edit {0}, {1}, {2}" xml:space="preserve"><value>编辑 {0}，{1}，{2}</value></data>
+  <data name="New event on {0} at {1}" xml:space="preserve"><value>在 {0} 的 {1} 新建日程</value></data>
+  <data name="Events this week" xml:space="preserve"><value>本周日程</value></data>
 </root>

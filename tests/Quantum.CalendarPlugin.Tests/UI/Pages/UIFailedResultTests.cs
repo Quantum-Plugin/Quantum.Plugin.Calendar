@@ -31,7 +31,7 @@ public sealed class UIFailedResultTests
         Assert.True((bool)Get(page, "_isEditorOpen")!);
         Assert.Equal("Keep this title", draft.GetType().GetProperty("Title")!.GetValue(draft));
         Assert.Equal("Request rejected.", Get(page, "_errorMessage"));
-        Assert.Equal(new[] { update ? "UpdateEntryAsync" : "CreateEntryAsync" }, ((FailedResultClient)(object)client).Calls);
+        Assert.Equal(new[] { update ? "UpdateEventAsync" : "CreateEventAsync" }, ((FailedResultClient)(object)client).Calls);
     }
 
     private static object? Get(object page, string name) => page.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(page);

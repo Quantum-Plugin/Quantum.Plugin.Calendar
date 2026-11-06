@@ -51,10 +51,11 @@ public partial class Calendar : IAsyncDisposable
     private string SelectedDateTitle => _selectedDate.ToDateTime(TimeOnly.MinValue).ToString("MMMM dddd", CultureInfo.CurrentCulture);
     private string EditorTitle => _editingId is null ? L["New item"] : L["Edit item"];
     private IReadOnlyList<CalendarEntryDetails> SelectedItems => [.. _items.Where(item => item.Date == _selectedDate)];
-    private int EventCount => _items.Count(item => item.Kind == CalendarEntryKind.Event);
-    private int OpenTaskCount => _items.Count(item => item.Kind == CalendarEntryKind.Task && !item.IsCompleted);
+    private IEnumerable<CalendarEntryDetails> VisibleItems => _items.Where(item => item.Date >= VisibleStartDate && item.Date <= VisibleEndDate);
+    private int EventCount => VisibleItems.Count(item => item.Kind == CalendarEntryKind.Event);
+    private int OpenTaskCount => VisibleItems.Count(item => item.Kind == CalendarEntryKind.Task && !item.IsCompleted);
     private int AllOpenTaskCount => _tasks.Count(task => !task.IsCompleted);
-    private int FreeDayCount => DateTime.DaysInMonth(_visibleMonth.Year, _visibleMonth.Month) - _items.Select(item => item.Date).Distinct().Count();
+    private int FreeDayCount => (VisibleEndDate.DayNumber - VisibleStartDate.DayNumber + 1) - VisibleItems.Select(item => item.Date).Distinct().Count();
     private IReadOnlyList<CalendarEntryDetails> FilteredTasks => [.._tasks.Where(task => _taskFilter switch
     {
         TaskFilter.Open => !task.IsCompleted,
@@ -69,7 +70,7 @@ public partial class Calendar : IAsyncDisposable
             var firstDay = new DateOnly(_visibleMonth.Year, _visibleMonth.Month, 1);
             var mondayOffset = ((int)firstDay.DayOfWeek + 6) % 7;
             var gridStart = firstDay.AddDays(-mondayOffset);
-            return [..Enumerable.Range(0, 42).Select(offset =>
+            return [..Enumerable.Range(0, Math.Min(42, DateOnly.MaxValue.DayNumber - gridStart.DayNumber + 1)).Select(offset =>
             {
                 var date = gridStart.AddDays(offset);
                 return new CalendarDay
@@ -86,7 +87,7 @@ public partial class Calendar : IAsyncDisposable
     protected override Task OnInitializedAsync() => ExecuteAsync(LoadAllCoreAsync);
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_isEditorOpen && _ledgerViewing is null && _editorModule is null)
+        if (!_isEditorOpen && _ledgerViewing is null && !_isWeekView && _editorModule is null)
         {
             return;
         }
@@ -94,6 +95,10 @@ public partial class Calendar : IAsyncDisposable
         _editorModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./_content/quantum.plugin.calendar/calendar.js");
         await _editorModule.InvokeVoidAsync("syncEditor", _editorDialog, _isEditorOpen);
         await _editorModule.InvokeVoidAsync("syncEditor", _ledgerDialog, _ledgerViewing is not null);
+        if (_isWeekView)
+        {
+            await _editorModule.InvokeVoidAsync("syncWeekViewport", _weekViewport, WeekStartDate.DayNumber, WeekScrollMinute, _selectedDate.DayNumber - WeekStartDate.DayNumber);
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -120,7 +125,7 @@ public partial class Calendar : IAsyncDisposable
             return;
         }
 
-        _previousMonthDays = CalendarDays;
+        _previousMonthDays = _isWeekView ? null : CalendarDays;
         _monthDirection = month > _visibleMonth ? 1 : -1;
         _visibleMonth = month;
     }
@@ -130,7 +135,7 @@ public partial class Calendar : IAsyncDisposable
         SetVisibleMonth(_visibleMonth.AddMonths(offset));
         _selectedDate = new DateOnly(_visibleMonth.Year, _visibleMonth.Month, Math.Min(_selectedDate.Day, DateTime.DaysInMonth(_visibleMonth.Year, _visibleMonth.Month)));
         CancelEdit();
-        await LoadMonthAsync();
+        await LoadVisiblePeriodAsync();
     }
 
     private async Task ShowTodayAsync()
@@ -138,17 +143,23 @@ public partial class Calendar : IAsyncDisposable
         SetVisibleMonth(new DateOnly(_today.Year, _today.Month, 1));
         _selectedDate = _today;
         CancelEdit();
-        await LoadMonthAsync();
+        await LoadVisiblePeriodAsync();
     }
 
     private async Task SelectDateAsync(DateOnly date)
     {
+        var previousStart = VisibleStartDate;
         _selectedDate = date;
         CancelEdit();
+        CancelDelete();
         if (date.Month != _visibleMonth.Month || date.Year != _visibleMonth.Year)
         {
             SetVisibleMonth(new DateOnly(date.Year, date.Month, 1));
-            await LoadMonthAsync();
+        }
+
+        if (VisibleStartDate != previousStart)
+        {
+            await LoadVisiblePeriodAsync();
         }
     }
 
@@ -164,7 +175,7 @@ public partial class Calendar : IAsyncDisposable
     {
         _selectedDate = _today;
         SetVisibleMonth(new DateOnly(_today.Year, _today.Month, 1));
-        await ExecuteAsync(LoadMonthCoreAsync);
+        await ExecuteAsync(LoadVisiblePeriodCoreAsync);
         if (_errorMessage is not null)
         {
             return;
@@ -186,7 +197,7 @@ public partial class Calendar : IAsyncDisposable
     {
         _selectedDate = task.Date;
         SetVisibleMonth(new DateOnly(task.Date.Year, task.Date.Month, 1));
-        await ExecuteAsync(LoadMonthCoreAsync);
+        await ExecuteAsync(LoadVisiblePeriodCoreAsync);
         if (_errorMessage is not null)
         {
             return;
@@ -201,6 +212,12 @@ public partial class Calendar : IAsyncDisposable
         if (kind == CalendarEntryKind.Task)
         {
             _draft.EndTime = null;
+            _draft.RepeatPattern = CalendarRepeatPattern.None;
+            _draft.RepeatInterval = 1;
+            _draft.RepeatWeekdays = CalendarWeekdays.None;
+            _draft.RepeatWeekOfMonth = null;
+            _draft.RepeatUntil = null;
+            _draft.RepeatCount = null;
         }
     }
 
@@ -219,24 +236,27 @@ public partial class Calendar : IAsyncDisposable
 
         await ExecuteAsync(async () =>
         {
-            var request = _draft.ToRequest();
             if (_editingId is { } id)
             {
-                if (!IsSuccessful(await _calendarService.UpdateEntryAsync(new() { Id = id, Entry = request }, Context.Empty)))
+                if (!IsSuccessful(_draft.Kind == CalendarEntryKind.Event
+                    ? await _calendarService.UpdateEventAsync(new() { Id = id, Entry = _draft.ToEventRequest() }, Context.Empty)
+                    : await _calendarService.UpdateTaskAsync(new() { Id = id, Entry = _draft.ToTaskRequest() }, Context.Empty)))
                 {
                     return;
                 }
             }
             else
             {
-                if (!IsSuccessful(await _calendarService.CreateEntryAsync(request, Context.Empty)))
+                if (!IsSuccessful(_draft.Kind == CalendarEntryKind.Event
+                    ? await _calendarService.CreateEventAsync(_draft.ToEventRequest(), Context.Empty)
+                    : await _calendarService.CreateTaskAsync(_draft.ToTaskRequest(), Context.Empty)))
                 {
                     return;
                 }
             }
 
-            _selectedDate = _draft.Date;
-            SetVisibleMonth(new DateOnly(_draft.Date.Year, _draft.Date.Month, 1));
+            _selectedDate = _isWeekView && _editingId is not null && _draft.RepeatPattern != CalendarRepeatPattern.None ? _selectedDate : _draft.Date;
+            SetVisibleMonth(new DateOnly(_selectedDate.Year, _selectedDate.Month, 1));
             CancelEdit();
             await LoadAllCoreAsync();
         });
@@ -244,7 +264,7 @@ public partial class Calendar : IAsyncDisposable
 
     private Task ToggleCompletedAsync(CalendarEntryDetails item) => ExecuteAsync(async () =>
     {
-        if (!IsSuccessful(await _calendarService.SetCompletedAsync(new() { Id = item.Id, IsCompleted = !item.IsCompleted }, Context.Empty)))
+        if (!IsSuccessful(await _calendarService.SetTaskCompletedAsync(new() { Id = item.Id, IsCompleted = !item.IsCompleted }, Context.Empty)))
         {
             return;
         }
@@ -276,7 +296,15 @@ public partial class Calendar : IAsyncDisposable
         CancelDelete();
         return ExecuteAsync(async () =>
         {
-            if (!IsSuccessful(await _calendarService.DeleteEntryAsync(new() { Id = id }, Context.Empty)))
+            var lookup = await _calendarService.GetEntryAsync(new() { Id = id }, Context.Empty);
+            if (!IsSuccessful(lookup) || lookup.Value?.Entry is not { } entry)
+            {
+                return;
+            }
+
+            if (!IsSuccessful(entry.Kind == CalendarEntryKind.Event
+                ? await _calendarService.DeleteEventAsync(new() { Id = id }, Context.Empty)
+                : await _calendarService.DeleteTaskAsync(new() { Id = id }, Context.Empty)))
             {
                 return;
             }
@@ -290,13 +318,13 @@ public partial class Calendar : IAsyncDisposable
         });
     }
 
-    private Task LoadMonthAsync() => ExecuteAsync(LoadMonthCoreAsync);
-    private async Task<bool> LoadMonthCoreAsync()
+    private Task LoadVisiblePeriodAsync() => ExecuteAsync(LoadVisiblePeriodCoreAsync);
+    private async Task<bool> LoadVisiblePeriodCoreAsync()
     {
-        var firstDay = new DateOnly(_visibleMonth.Year, _visibleMonth.Month, 1);
-        var result = await _calendarService.ListEntriesAsync(new() { StartDate = firstDay, EndDate = firstDay.AddMonths(1).AddDays(-1) }, Context.Empty);
+        var result = await _calendarService.ListEntriesAsync(new() { StartDate = VisibleStartDate, EndDate = VisibleEndDate }, Context.Empty);
         if (!IsSuccessful(result))
         {
+            _items = [];
             return false;
         }
 
@@ -306,7 +334,7 @@ public partial class Calendar : IAsyncDisposable
 
     private async Task LoadAllCoreAsync()
     {
-        if (!await LoadMonthCoreAsync())
+        if (!await LoadVisiblePeriodCoreAsync())
         {
             return;
         }
@@ -381,7 +409,7 @@ public partial class Calendar : IAsyncDisposable
         All
     }
 
-    private sealed class EntryDraft
+    private sealed partial class EntryDraft
     {
         public string Title { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
@@ -391,16 +419,6 @@ public partial class Calendar : IAsyncDisposable
         public TimeOnly? EndTime { get; set; }
         public string Style { get; set; } = "violet";
 
-        public SaveCalendarEntryRequest ToRequest() => new()
-        {
-            Title = Title,
-            Notes = Notes,
-            Kind = Kind,
-            Date = Date,
-            StartTime = StartTime,
-            EndTime = EndTime,
-            Style = Style
-        };
         public static EntryDraft Create(DateOnly date) => new()
         {
             Date = date,
@@ -411,7 +429,13 @@ public partial class Calendar : IAsyncDisposable
             Title = item.Title,
             Notes = item.Notes,
             Kind = item.Kind,
-            Date = item.Date,
+            Date = item.RepeatPattern == CalendarRepeatPattern.None ? item.Date : item.SeriesStartDate,
+            RepeatPattern = item.RepeatPattern,
+            RepeatInterval = item.RepeatInterval,
+            RepeatWeekdays = item.RepeatWeekdays,
+            RepeatWeekOfMonth = item.RepeatWeekOfMonth,
+            RepeatUntil = item.RepeatUntil,
+            RepeatCount = item.RepeatCount,
             StartTime = item.StartTime,
             EndTime = item.EndTime,
             Style = item.Style

@@ -18,6 +18,9 @@ internal sealed class CalendarDbContextModelCreatingContributor : IDbContextMode
             entity.Property(item => item.StartTime).IsRequired();
             entity.Property(item => item.Style).HasMaxLength(16).IsRequired();
             entity.Property(item => item.IsCompleted).IsRequired();
+            entity.Property(item => item.RepeatPattern).IsRequired();
+            entity.Property(item => item.RepeatInterval).IsRequired();
+            entity.Property(item => item.RepeatWeekdays).IsRequired();
             entity.Property(item => item.CreatedAt).IsRequired();
             entity.Property(item => item.UpdatedAt).IsRequired();
             entity.HasIndex(item => new { item.Date, item.StartTime });

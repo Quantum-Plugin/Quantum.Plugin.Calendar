@@ -34,11 +34,17 @@ jobs:
         shell: pwsh
       - run: npm ci --prefix .ci
       - run: npm run check --prefix .ci
+      - run: npm run test --prefix .ci
       - run: dotnet test Quantum.Plugin.Calendar.slnx -c Release --no-restore
+      - run: ./.ci/TestSdkCompatibility.ps1
+        shell: pwsh
       - run: ./.ci/Build.ps1
         shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
           name: Quantum.Plugin.Calendar-${{ runner.os }}
-          path: artifacts/*.zip
+          path: |
+            artifacts/*.zip
+            artifacts/release-metadata.json
+            artifacts/SHA256SUMS.txt
           if-no-files-found: error

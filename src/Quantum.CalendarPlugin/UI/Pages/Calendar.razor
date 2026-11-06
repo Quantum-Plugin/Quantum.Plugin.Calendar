@@ -20,35 +20,124 @@
     }
 
     <div class="calendar-layout" aria-busy="@_isBusy">
-        <div class="calendar-board">
-            <header class="month-navigation" aria-label="@L["Month navigation"]">
+        <div class="calendar-board @(_isWeekView ? "week-board" : null)">
+            <header class="month-navigation" aria-label="@(_isWeekView ? L["Week navigation"] : L["Month navigation"])">
                 <div class="month-controls">
-                    <button type="button" class="icon-button" aria-label="@L["Previous month"]" disabled="@_isBusy" @onclick="() => ChangeMonthAsync(-1)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m14.5 7-5 5 5 5" /></svg></button>
-                    <button type="button" class="icon-button" aria-label="@L["Next month"]" disabled="@_isBusy" @onclick="() => ChangeMonthAsync(1)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9.5 7 5 5-5 5" /></svg></button>
+                    <button type="button" class="icon-button" aria-label="@(_isWeekView ? L["Previous week"] : L["Previous month"])" disabled="@(_isBusy || !CanGoBack)" @onclick="() => ChangePeriodAsync(-1)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m14.5 7-5 5 5 5" /></svg></button>
+                    <button type="button" class="icon-button" aria-label="@(_isWeekView ? L["Next week"] : L["Next month"])" disabled="@(_isBusy || !CanGoForward)" @onclick="() => ChangePeriodAsync(1)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9.5 7 5 5-5 5" /></svg></button>
                     <button type="button" class="today-button" disabled="@_isBusy" @onclick="ShowTodayAsync">@L["Today"]</button>
                 </div>
-                <h2>@MonthTitle</h2>
-                <div class="month-heading-spacer" aria-hidden="true"></div>
+                <h2 aria-live="polite">@PeriodTitle</h2>
+                <div class="view-switch" role="group" aria-label="@L["Calendar view"]">
+                    <button type="button" aria-pressed="@(_isWeekView ? "false" : "true")" disabled="@_isBusy" @onclick="() => SetWeekViewAsync(false)">@L["Month"]</button>
+                    <button type="button" aria-pressed="@(_isWeekView ? "true" : "false")" disabled="@_isBusy" @onclick="() => SetWeekViewAsync(true)">@L["Week"]</button>
+                </div>
             </header>
-            <div class="weekday-row" aria-hidden="true">
-                @foreach (var weekday in Weekdays)
-                {
-                    <span>@weekday</span>
-                }
-            </div>
-            <div class="month-viewport" style="--month-direction: @_monthDirection">
-                @if (_previousMonthDays is { } previousDays)
-                {
-                    <div @key="previousDays" class="day-grid outgoing-grid" aria-hidden="true" inert>
-                        @foreach (var day in previousDays)
+            @if (_isWeekView)
+            {
+                <div class="week-viewport" role="region" aria-label="@L["Week schedule"]" tabindex="0" @ref="_weekViewport">
+                    <div class="week-content">
+                        <div class="week-summary">
+                            <div class="week-task-label">@L["Tasks"]</div>
+                            @foreach (var day in WeekDays)
+                            {
+                                <div @key="day.Date" class="week-day-summary @(day.IsToday ? "today" : null) @(day.Date == _selectedDate ? "selected" : null)">
+                                    <button type="button" class="week-date" aria-label="@GetDayAriaLabel(day)" aria-pressed="@(day.Date == _selectedDate ? "true" : "false")" disabled="@_isBusy" @onclick="() => SelectDateAsync(day.Date)">
+                                        <span>@day.Date.ToString("ddd", CultureInfo.CurrentCulture)</span>
+                                        <time datetime="@day.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">@day.Date.ToString("M/d", CultureInfo.CurrentCulture)</time>
+                                    </button>
+                                    <div class="week-task-list">
+                                        @foreach (var task in day.Items.Where(item => item.Kind == CalendarEntryKind.Task))
+                                        {
+                                            <button @key="task.Id" type="button" class="week-task @task.Style @(task.IsCompleted ? "completed" : null)" title="@WeekEntryLabel(task)" aria-label="@WeekEntryLabel(task)" disabled="@_isBusy" @onclick="() => BeginEditWeekEntry(task)">
+                                                <time>@task.StartTime.ToString("HH:mm", CultureInfo.InvariantCulture)</time> @task.Title
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="week-timeline" data-week-timeline>
+                            <div class="week-time-ruler" aria-hidden="true">
+                                @for (var hour = 0; hour < 24; hour++)
+                                {
+                                    <span class="week-time-label" style="--hour: @hour">@(new TimeOnly(hour, 0).ToString("HH:mm", CultureInfo.InvariantCulture))</span>
+                                }
+                            </div>
+                            @foreach (var day in WeekDays)
+                            {
+                                <div @key="day.Date" class="week-day @(day.Date == _selectedDate ? "selected" : null)">
+                                    @for (var hour = 0; hour < 24; hour++)
+                                    {
+                                        var slotHour = hour;
+                                        <button type="button" class="week-slot" tabindex="@(day.Date == _selectedDate ? 0 : -1)" aria-label="@L["New event on {0} at {1}", day.Date.ToString("D", CultureInfo.CurrentCulture), new TimeOnly(slotHour, 0).ToString("t", CultureInfo.CurrentCulture)]" disabled="@_isBusy" @onclick="() => BeginCreateWeekEvent(day.Date, slotHour)"></button>
+                                    }
+                                    @foreach (var layout in CalendarWeekLayout.Arrange(day.Items))
+                                    {
+                                        var item = layout.Entry;
+                                        <button @key="item.Id" type="button" class="week-event @item.Style" style="@(layout.Style)" title="@WeekEntryLabel(item)" aria-label="@WeekEntryLabel(item)" disabled="@_isBusy" @onclick="() => BeginEditWeekEntry(item)">
+                                            <time>@FormatTime(item)</time>
+                                            <span class="week-event-title">@item.Title</span>
+                                            @if (item.RepeatPattern != CalendarRepeatPattern.None)
+                                            {
+                                                <span class="week-repeat" aria-hidden="true">↻</span>
+                                            }
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="weekday-row" aria-hidden="true">
+                    @foreach (var weekday in Weekdays)
+                    {
+                        <span>@weekday</span>
+                    }
+                </div>
+                <div class="month-viewport" style="--month-direction: @_monthDirection">
+                    @if (_previousMonthDays is { } previousDays)
+                    {
+                        <div @key="previousDays" class="day-grid outgoing-grid" aria-hidden="true" inert>
+                            @foreach (var day in previousDays)
+                            {
+                                <div class="@GetDayClass(day)">
+                                    <time>@day.Date.Day</time>
+                                    <div class="day-entries">
+                                        @foreach (var item in day.Items.Take(3))
+                                        {
+                                            <span class="entry-chip @item.Style @(item.IsCompleted ? "completed" : null)">
+                                                <span>@(item.Kind == CalendarEntryKind.Task ? "✓" : "●")</span>
+                                                @item.Title
+                                            </span>
+                                        }
+                                        @if (day.Items.Count > 3)
+                                        {
+                                            <span class="more-entries">+@(day.Items.Count - 3)</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    <div @key="_visibleMonth" class="day-grid incoming-grid" role="grid" aria-label="@MonthTitle">
+                        @foreach (var day in CalendarDays)
                         {
-                            <div class="@GetDayClass(day)">
-                                <time>@day.Date.Day</time>
+                            <button @key="day.Date"
+                                    type="button"
+                                    class="@GetDayClass(day)"
+                                    aria-label="@GetDayAriaLabel(day)"
+                                    aria-pressed="@(day.Date == _selectedDate ? "true" : "false")"
+                                    @onclick="() => SelectDateAsync(day.Date)">
+                                <time datetime="@day.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">@day.Date.Day</time>
                                 <div class="day-entries">
                                     @foreach (var item in day.Items.Take(3))
                                     {
                                         <span class="entry-chip @item.Style @(item.IsCompleted ? "completed" : null)">
-                                            <span>@(item.Kind == CalendarEntryKind.Task ? "✓" : "●")</span>
+                                            <span aria-hidden="true">@(item.Kind == CalendarEntryKind.Task ? "✓" : "●")</span>
                                             @item.Title
                                         </span>
                                     }
@@ -57,39 +146,13 @@
                                         <span class="more-entries">+@(day.Items.Count - 3)</span>
                                     }
                                 </div>
-                            </div>
+                            </button>
                         }
                     </div>
-                }
-                <div @key="_visibleMonth" class="day-grid incoming-grid" role="grid" aria-label="@MonthTitle">
-                    @foreach (var day in CalendarDays)
-                    {
-                        <button @key="day.Date"
-                                type="button"
-                                class="@GetDayClass(day)"
-                                aria-label="@GetDayAriaLabel(day)"
-                                aria-pressed="@(day.Date == _selectedDate)"
-                                @onclick="() => SelectDateAsync(day.Date)">
-                            <time datetime="@day.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)">@day.Date.Day</time>
-                            <div class="day-entries">
-                                @foreach (var item in day.Items.Take(3))
-                                {
-                                    <span class="entry-chip @item.Style @(item.IsCompleted ? "completed" : null)">
-                                        <span aria-hidden="true">@(item.Kind == CalendarEntryKind.Task ? "✓" : "●")</span>
-                                        @item.Title
-                                    </span>
-                                }
-                                @if (day.Items.Count > 3)
-                                {
-                                    <span class="more-entries">+@(day.Items.Count - 3)</span>
-                                }
-                            </div>
-                        </button>
-                    }
                 </div>
-            </div>
+            }
             <footer class="month-stats">
-                <div><strong>@EventCount</strong><span>@L["Events"]</span></div>
+                <div><strong>@EventCount</strong><span>@(_isWeekView ? L["Events this week"] : L["Events"])</span></div>
                 <div><strong>@OpenTaskCount</strong><span>@L["Open tasks"]</span></div>
                 <div><strong>@FreeDayCount</strong><span>@L["Free days"]</span></div>
             </footer>
@@ -161,6 +224,10 @@
                                     </div>
                                 </div>
                                 <h2>@item.Title</h2>
+                                @if (item.RepeatPattern != CalendarRepeatPattern.None)
+                                {
+                                    <p class="recurrence-help">@L["Repeating event. Editing or deleting affects the entire series."]</p>
+                                }
                                 @if (!string.IsNullOrWhiteSpace(item.Notes))
                                 {
                                     <p>@item.Notes</p>
@@ -279,8 +346,8 @@
                     <div class="error-banner" role="alert">@_errorMessage</div>
                 }
                 <div class="kind-switch" role="group" aria-label="@L["Item type"]">
-                    <button type="button" class="@(_draft.Kind == CalendarEntryKind.Event ? "active" : null)" @onclick="() => SetDraftKind(CalendarEntryKind.Event)">@L["Event"]</button>
-                    <button type="button" class="@(_draft.Kind == CalendarEntryKind.Task ? "active" : null)" @onclick="() => SetDraftKind(CalendarEntryKind.Task)">@L["Task"]</button>
+                    <button type="button" class="@(_draft.Kind == CalendarEntryKind.Event ? "active" : null)" disabled="@(_editingId is not null)" @onclick="() => SetDraftKind(CalendarEntryKind.Event)">@L["Event"]</button>
+                    <button type="button" class="@(_draft.Kind == CalendarEntryKind.Task ? "active" : null)" disabled="@(_editingId is not null)" @onclick="() => SetDraftKind(CalendarEntryKind.Task)">@L["Task"]</button>
                 </div>
                 <label>
                     <span>@L["Title"]</span>
@@ -302,6 +369,78 @@
                         <span>@L["End time (optional)"]</span>
                         <input type="time" @bind="_draft.EndTime" />
                     </label>
+                }
+                @if (_draft.Kind == CalendarEntryKind.Event)
+                {
+                    <fieldset class="recurrence-editor">
+                        <legend>@L["Repeat"]</legend>
+                        <label>
+                            <span>@L["Repeat pattern"]</span>
+                            <select @bind="_draft.Preset">
+                                @foreach (var preset in Enum.GetValues<RepeatPreset>())
+                                {
+                                    <option value="@preset">@RepeatLabel(preset)</option>
+                                }
+                            </select>
+                        </label>
+                        @if (_draft.RepeatPattern != CalendarRepeatPattern.None)
+                        {
+                            @if (_draft.RepeatPattern != CalendarRepeatPattern.Weekdays)
+                            {
+                                <label>
+                                    <span>@L["Repeat interval"]</span>
+                                    <input type="number" min="1" max="999" required @bind="_draft.RepeatInterval" />
+                                </label>
+                            }
+                            @if (_draft.RepeatPattern == CalendarRepeatPattern.Weekly)
+                            {
+                                <div class="repeat-days" role="group" aria-label="@L["Repeat on weekdays"]">
+                                    @foreach (var day in RepeatDays)
+                                    {
+                                        <button type="button" aria-pressed="@_draft.RepeatsOn(day)" @onclick="() => _draft.ToggleRepeatDay(day)">@CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedDayName(day)</button>
+                                    }
+                                </div>
+                            }
+                            @if (_draft.RepeatPattern == CalendarRepeatPattern.MonthlyWeekday)
+                            {
+                                <label>
+                                    <span>@L["Week of month"]</span>
+                                    <select @bind="_draft.RepeatWeekOfMonth">
+                                        <option value="">@L["Same ordinal as start date"]</option>
+                                        @for (var week = 1; week <= 5; week++)
+                                        {
+                                            <option value="@week">@week</option>
+                                        }
+                                        <option value="-1">@L["Last weekday of that name"]</option>
+                                    </select>
+                                </label>
+                            }
+                            <label>
+                                <span>@L["Ends"]</span>
+                                <select @bind="_draft.End">
+                                    <option value="@RepeatEnd.Never">@L["Never"]</option>
+                                    <option value="@RepeatEnd.OnDate">@L["On date"]</option>
+                                    <option value="@RepeatEnd.AfterCount">@L["After occurrences"]</option>
+                                </select>
+                            </label>
+                            @if (_draft.End == RepeatEnd.OnDate)
+                            {
+                                <label>
+                                    <span>@L["Last occurrence date (inclusive)"]</span>
+                                    <input type="date" required min="@_draft.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" @bind="_draft.RepeatUntil" />
+                                </label>
+                            }
+                            @if (_draft.End == RepeatEnd.AfterCount)
+                            {
+                                <label>
+                                    <span>@L["Total occurrences"]</span>
+                                    <input type="number" min="1" max="10000" required @bind="_draft.RepeatCount" />
+                                </label>
+                            }
+                            <p class="recurrence-help">@L["The start date must match the repeat rule. Missing dates are skipped. Weekdays means Monday-Friday, without holiday adjustments."]</p>
+                            <p class="recurrence-help">@L["Repeating event. Editing or deleting affects the entire series."]</p>
+                        }
+                    </fieldset>
                 }
                 <label>
                     <span>@L["Notes"]</span>

@@ -25,4 +25,22 @@ public sealed record SaveCalendarEntryRequest
 
     [Description("Color identifier: violet, blue, coral, or green.")]
     public required string Style { get; set; }
+
+    [Description("Repeat pattern: None, Daily, Weekdays (Monday-Friday), Weekly, Monthly (same date), MonthlyWeekday (same ordinal weekday), MonthlyLastDay, or Yearly. Events only.")]
+    public CalendarRepeatPattern RepeatPattern { get; set; }
+
+    [Description("Repeat every N days/weeks/months/years, 1-999. Use Weekly with 2 for biweekly. Weekdays requires 1.")]
+    public int RepeatInterval { get; set; } = 1;
+
+    [Description("Weekly weekday flags: Sunday=1, Monday=2, Tuesday=4, Wednesday=8, Thursday=16, Friday=32, Saturday=64. None uses the series start weekday.")]
+    public CalendarWeekdays RepeatWeekdays { get; set; }
+
+    [Description("MonthlyWeekday ordinal: 1-5, or -1 for last. Null uses the series start ordinal.")]
+    public int? RepeatWeekOfMonth { get; set; }
+
+    [Description("Inclusive last date; null means no date limit. Cannot combine with RepeatCount.")]
+    public DateOnly? RepeatUntil { get; set; }
+
+    [Description("Total occurrences including the series start, 1-10000; null means no count limit. Cannot combine with RepeatUntil.")]
+    public int? RepeatCount { get; set; }
 }

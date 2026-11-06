@@ -88,4 +88,44 @@
   <data name="Today's items" xml:space="preserve"><value>Today's items</value></data>
   <data name="Unable to load data. Reconnecting automatically." xml:space="preserve"><value>Unable to load data. Reconnecting automatically.</value></data>
   <data name="Done" xml:space="preserve"><value>Done</value></data>
+  <data name="Repeat" xml:space="preserve"><value>Repeat</value></data>
+  <data name="Repeat pattern" xml:space="preserve"><value>Repeat pattern</value></data>
+  <data name="Does not repeat" xml:space="preserve"><value>Does not repeat</value></data>
+  <data name="Every day" xml:space="preserve"><value>Every day</value></data>
+  <data name="Every weekday (Monday-Friday)" xml:space="preserve"><value>Every weekday (Monday-Friday)</value></data>
+  <data name="Every week" xml:space="preserve"><value>Every week</value></data>
+  <data name="Every two weeks" xml:space="preserve"><value>Every two weeks</value></data>
+  <data name="Every month on the same date" xml:space="preserve"><value>Every month on the same date</value></data>
+  <data name="Every month on an ordinal weekday" xml:space="preserve"><value>Every month on an ordinal weekday</value></data>
+  <data name="Every year" xml:space="preserve"><value>Every year</value></data>
+  <data name="Repeat interval" xml:space="preserve"><value>Repeat interval</value></data>
+  <data name="Repeat on weekdays" xml:space="preserve"><value>Repeat on weekdays</value></data>
+  <data name="Week of month" xml:space="preserve"><value>Week of month</value></data>
+  <data name="Same ordinal as start date" xml:space="preserve"><value>Same ordinal as start date</value></data>
+  <data name="Last weekday of that name" xml:space="preserve"><value>Last weekday of that name</value></data>
+  <data name="Ends" xml:space="preserve"><value>Ends</value></data>
+  <data name="Never" xml:space="preserve"><value>Never</value></data>
+  <data name="On date" xml:space="preserve"><value>On date</value></data>
+  <data name="After occurrences" xml:space="preserve"><value>After occurrences</value></data>
+  <data name="Last occurrence date (inclusive)" xml:space="preserve"><value>Last occurrence date (inclusive)</value></data>
+  <data name="Total occurrences" xml:space="preserve"><value>Total occurrences</value></data>
+  <data name="The start date must match the repeat rule. Missing dates are skipped. Weekdays means Monday-Friday, without holiday adjustments." xml:space="preserve"><value>The start date must match the repeat rule. Missing dates are skipped. Weekdays means Monday-Friday, without holiday adjustments.</value></data>
+  <data name="Repeating event. Editing or deleting affects the entire series." xml:space="preserve"><value>Repeating event. Editing or deleting affects the entire series.</value></data>
+  <data name="The recurrence rule is invalid." xml:space="preserve"><value>The recurrence rule is invalid.</value></data>
+  <data name="The recurrence options do not match the entry type or repeat pattern." xml:space="preserve"><value>The recurrence options do not match the entry type or repeat pattern.</value></data>
+  <data name="The series start date must match the recurrence rule." xml:space="preserve"><value>The series start date must match the recurrence rule.</value></data>
+  <data name="Only tasks can be completed." xml:space="preserve"><value>Only tasks can be completed.</value></data>
+  <data name="A calendar query cannot exceed 3,660 days." xml:space="preserve"><value>A calendar query cannot exceed 3,660 days.</value></data>
+  <data name="Too many calendar occurrences. Use a shorter date range." xml:space="preserve"><value>Too many calendar occurrences. Use a shorter date range.</value></data>
+  <data name="Every month on the last day" xml:space="preserve"><value>Every month on the last day</value></data>
+  <data name="Week navigation" xml:space="preserve"><value>Week navigation</value></data>
+  <data name="Previous week" xml:space="preserve"><value>Previous week</value></data>
+  <data name="Next week" xml:space="preserve"><value>Next week</value></data>
+  <data name="Calendar view" xml:space="preserve"><value>Calendar view</value></data>
+  <data name="Month" xml:space="preserve"><value>Month</value></data>
+  <data name="Week" xml:space="preserve"><value>Week</value></data>
+  <data name="Week schedule" xml:space="preserve"><value>Week schedule</value></data>
+  <data name="Edit {0}, {1}, {2}" xml:space="preserve"><value>Edit {0}, {1}, {2}</value></data>
+  <data name="New event on {0} at {1}" xml:space="preserve"><value>New event on {0} at {1}</value></data>
+  <data name="Events this week" xml:space="preserve"><value>Events this week</value></data>
 </root>
