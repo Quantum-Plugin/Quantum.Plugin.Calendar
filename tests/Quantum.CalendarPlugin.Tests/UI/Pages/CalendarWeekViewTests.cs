@@ -197,6 +197,25 @@ public sealed class CalendarWeekViewTests
     }
 
     [Fact]
+    public async Task DeletionRefreshesTasksAndStoredSeriesEvenWhenOccurrenceExpansionFails()
+    {
+        var (page, client) = CreatePage(new(2026, 12, 31));
+        var task = Entry(new(2026, 12, 31), CalendarEntryKind.Task);
+        var unresolved = Entry(task.Date, CalendarEntryKind.Event) with { RepeatRuleId = "example.school/missing" };
+        client.Items = [task, unresolved];
+        Set(page, "_tasks", new[] { task });
+        await Invoke(page, "ToggleSeriesAsync");
+        Assert.Equal(2, ((CalendarEntryDetails[])Get(page, "_seriesItems")!).Length);
+        client.FailExpandedQueries = true;
+        await Invoke(page, "DeleteAsync", task.Id, true);
+        await Invoke(page, "DeleteAsync", task.Id, true);
+        Assert.Empty((IReadOnlyList<CalendarEntryDetails>)Get(page, "_tasks")!);
+        Assert.Empty((IReadOnlyList<CalendarEntryDetails>)Get(page, "_items")!);
+        Assert.Equal(unresolved.Id, Assert.Single((CalendarEntryDetails[])Get(page, "_seriesItems")!).Id);
+        Assert.Equal("Unable to load data.", Get(page, "_errorMessage"));
+    }
+
+    [Fact]
     public async Task EditorRendersBuiltInAndExternalRulesFromOneContributionCatalog()
     {
         var html = await RenderViewAsync(false, editor: true);
@@ -268,6 +287,7 @@ public sealed class CalendarWeekViewTests
         public List<ListCalendarEntriesRequest> Queries { get; } = [];
         public CalendarEntryDetails[] Items { get; set; } = [];
         public bool FailQueries { get; set; }
+        public bool FailExpandedQueries { get; set; }
         public UpdateCalendarEventRequest? LastUpdate { get; private set; }
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
@@ -276,7 +296,14 @@ public sealed class CalendarWeekViewTests
                 case "ListEntriesAsync":
                     var request = (ListCalendarEntriesRequest)args![0]!;
                     Queries.Add(request);
-                    return Task.FromResult<Result<CalendarEntryDetails[]>>(FailQueries ? Result.Fail("unavailable", "Unable to load data.") : Result.Success(Items.Where(item => item.Date >= request.StartDate && item.Date <= request.EndDate).ToArray()));
+                    return Task.FromResult<Result<CalendarEntryDetails[]>>(FailQueries || (FailExpandedQueries && request.SeriesPage is null) ? Result.Fail("unavailable", "Unable to load data.") : Result.Success(Items.Where(item => item.Date >= request.StartDate && item.Date <= request.EndDate).ToArray()));
+                case "GetEntryAsync":
+                    var lookup = (CalendarEntryRequest)args![0]!;
+                    return Task.FromResult(QuantumRequestResult<CalendarEntryLookup>.Answer(new CalendarEntryLookup { Entry = Items.SingleOrDefault(item => item.Id == lookup.Id) }));
+                case "DeleteTaskAsync":
+                    var deleted = (CalendarEntryRequest)args![0]!;
+                    Items = Items.Where(item => item.Id != deleted.Id).ToArray();
+                    return Task.FromResult(Result.Success());
                 case "ListTasksAsync":
                     return Task.FromResult(Result.Success(Items.Where(item => item.Kind == CalendarEntryKind.Task).ToArray()));
                 case "UpdateEventAsync":
