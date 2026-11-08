@@ -201,6 +201,9 @@ textarea:focus-visible {
   margin-top: 5px;
   width: 100%;
 }
+.day-cell.outside-month .day-entries {
+  opacity: 0.75;
+}
 .violet {
   --item-color: #6d5a96;
 }
