@@ -474,11 +474,11 @@
                                     <option value="">@L["Keep original dates"]</option>
                                     @foreach (var rule in SchedulingSnapshot.Adjustments.Values.OrderBy(rule => rule.Title).ThenBy(rule => rule.Id))
                                     {
-                                        <option value="@rule.Id">@rule.Title (@rule.Id)</option>
+                                        <option value="@rule.Id">@rule.Title</option>
                                     }
                                     @if (_draft.AdjustmentRuleId is { } missingAdjustment && !SchedulingSnapshot.Adjustments.ContainsKey(missingAdjustment))
                                     {
-                                        <option value="@missingAdjustment">@L["Unavailable source"] (@missingAdjustment)</option>
+                                        <option value="@missingAdjustment">@L["Unavailable source"]</option>
                                     }
                                 </select>
                             </label>

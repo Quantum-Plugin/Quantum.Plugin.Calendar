@@ -9,6 +9,8 @@ public partial class Calendar
 {
     private bool _isWeekView;
     private ElementReference _weekViewport;
+    private DateOnly MonthGridStartDate => _visibleMonth.AddDays(-((int)_visibleMonth.DayOfWeek + 6) % 7);
+    private DateOnly MonthGridEndDate => AddDaysClamped(MonthGridStartDate, 41);
     private DateOnly WeekStartDate => _selectedDate.AddDays(-((int)_selectedDate.DayOfWeek + 6) % 7);
     private DateOnly WeekEndDate => AddDaysClamped(WeekStartDate, 6);
     private DateOnly VisibleStartDate => _isWeekView ? WeekStartDate : _visibleMonth;

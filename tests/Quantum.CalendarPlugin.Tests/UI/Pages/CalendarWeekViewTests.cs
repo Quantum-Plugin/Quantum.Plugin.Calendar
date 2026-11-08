@@ -25,7 +25,7 @@ public sealed class CalendarWeekViewTests
         AssertRange(client, new(2027, 1, 4), new(2027, 1, 10));
         Assert.Equal(new DateOnly(2027, 1, 7), Get(page, "_selectedDate"));
         await Invoke(page, "SetWeekViewAsync", false);
-        AssertRange(client, new(2027, 1, 1), new(2027, 1, 31));
+        AssertRange(client, new(2026, 12, 28), new(2027, 2, 7));
         Assert.Equal(new DateOnly(2027, 1, 7), Get(page, "_selectedDate"));
     }
 
@@ -39,7 +39,7 @@ public sealed class CalendarWeekViewTests
         Assert.Equal(count, client.Queries.Count);
         Assert.Equal(new DateOnly(2027, 1, 1), Get(page, "_visibleMonth"));
         await Invoke(page, "SetWeekViewAsync", false);
-        AssertRange(client, new(2027, 1, 1), new(2027, 1, 31));
+        AssertRange(client, new(2026, 12, 28), new(2027, 2, 7));
     }
 
     [Theory]
@@ -60,7 +60,7 @@ public sealed class CalendarWeekViewTests
 
         typeof(CalendarPage).GetMethod("CancelEdit", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(page, null);
         await Invoke(page, "SetWeekViewAsync", false);
-        AssertRange(client, new(2027, 1, 1), new(2027, 1, 31));
+        AssertRange(client, new(2026, 12, 28), new(2027, 2, 7));
         Assert.Equal(new DateOnly(2027, 1, 1), Get(page, "_selectedDate"));
     }
 
@@ -136,7 +136,7 @@ public sealed class CalendarWeekViewTests
         await Invoke(page, "ChangePeriodAsync", 1);
         Assert.Equal(count, client.Queries.Count);
         await Invoke(page, "SetWeekViewAsync", false);
-        AssertRange(client, new(9999, 12, 1), DateOnly.MaxValue);
+        AssertRange(client, new(9999, 11, 29), DateOnly.MaxValue);
         Assert.NotNull(typeof(CalendarPage).GetProperty("CalendarDays", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(page));
         var (first, firstClient) = CreatePage(DateOnly.MinValue);
         await Invoke(first, "SetWeekViewAsync", true);
@@ -144,6 +144,8 @@ public sealed class CalendarWeekViewTests
         count = firstClient.Queries.Count;
         await Invoke(first, "ChangePeriodAsync", -1);
         Assert.Equal(count, firstClient.Queries.Count);
+        await Invoke(first, "SetWeekViewAsync", false);
+        AssertRange(firstClient, DateOnly.MinValue, new(1, 2, 11));
     }
 
     [Fact]
@@ -165,12 +167,15 @@ public sealed class CalendarWeekViewTests
     }
 
     [Fact]
-    public async Task MonthMarkupRemainsTheDefaultAndKeepsItsDateGrid()
+    public async Task MonthMarkupShowsItemsOnNeighboringMonthDates()
     {
         var html = await RenderViewAsync(false);
         Assert.Contains("day-grid incoming-grid", html);
         Assert.DoesNotContain("week-viewport", html);
         Assert.Contains("Calendar view", html);
+        Assert.Contains("Previous month event", html);
+        Assert.Contains("Next month event", html);
+        Assert.Matches("""<footer\b[^>]*class="month-stats"[^>]*>\s*<div\b[^>]*>\s*<strong\b[^>]*>2</strong>""", html);
         Assert.DoesNotContain("Manage scheduling rules", html);
         Assert.DoesNotContain("Repeating event. Editing or deleting affects the entire series.", html);
     }
@@ -222,6 +227,7 @@ public sealed class CalendarWeekViewTests
         Assert.Matches("""<summary\b[^>]*>Advanced settings</summary>""", drawer);
         Assert.Contains("Adjustment source", drawer);
         Assert.Contains("Keep original dates", drawer);
+        Assert.Matches("""<option\b[^>]*value="example.company/shifts"[^>]*>Company shifts</option>""", drawer);
         Assert.DoesNotContain("Only this item follows the selected source.", html);
         Assert.DoesNotContain("The start date must match the repeat rule.", html);
         Assert.DoesNotContain("Repeating event. Editing or deleting affects the entire series.", html);
@@ -248,7 +254,14 @@ public sealed class CalendarWeekViewTests
         services.AddLocalization();
         var client = DispatchProxy.Create<ICalendarRpcServiceClient, WeekClient>();
         var fake = (WeekClient)(object)client;
-        fake.Items = [Entry(new(2026, 12, 31), CalendarEntryKind.Event) with { Title = "Planning", RepeatPattern = CalendarRepeatPattern.Weekly, SeriesStartDate = new(2026, 1, 1), EndTime = new(10, 30) }, Entry(new(2026, 12, 31), CalendarEntryKind.Event) with { Title = "Year-end review", StartTime = new(9, 30), EndTime = new(11, 0), Style = "green" }, Entry(new(2027, 1, 1), CalendarEntryKind.Event) with { Title = "Planning", Style = "coral" }, Entry(new(2027, 1, 1), CalendarEntryKind.Task) with { Title = "Send notes" }];
+        fake.Items =
+        [
+            Entry(new(2026, 12, 31), CalendarEntryKind.Event) with { Title = "Planning", RepeatPattern = CalendarRepeatPattern.Weekly, SeriesStartDate = new(2026, 1, 1), EndTime = new(10, 30) },
+            Entry(new(2026, 12, 31), CalendarEntryKind.Event) with { Title = "Year-end review", StartTime = new(9, 30), EndTime = new(11, 0), Style = "green" },
+            Entry(new(2027, 1, 1), CalendarEntryKind.Event) with { Title = "Next month event", Style = "coral" },
+            Entry(new(2027, 1, 1), CalendarEntryKind.Task) with { Title = "Send notes" },
+            Entry(new(2026, 11, 30), CalendarEntryKind.Event) with { Title = "Previous month event" }
+        ];
         if (collision)
         {
             fake.Items[0] = fake.Items[0] with { OriginalDate = new(2026, 12, 30) };
@@ -261,6 +274,7 @@ public sealed class CalendarWeekViewTests
             var scheduling = new Quantum.OfficialPlugins.Calendar.CalendarSchedulingExtensions(extensions);
             scheduling.Start();
             extensions.Publish(Quantum.OfficialPlugins.Calendar.CalendarSchedulingExtensions.RecurrencePoint, SchedulingExtensionHost.Contribution("example.school", "term", """{"title":"Teaching term","dates":["2026-11-06"]}"""));
+            extensions.Publish(Quantum.OfficialPlugins.Calendar.CalendarSchedulingExtensions.AdjustmentPoint, SchedulingExtensionHost.Contribution("example.company", "shifts", """{"title":"Company shifts","validFrom":"2026-12-01","validUntil":"2027-01-31","changes":[]}"""));
             services.AddSingleton(scheduling);
         }
 
