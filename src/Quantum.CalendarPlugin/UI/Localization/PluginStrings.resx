@@ -140,9 +140,6 @@
   <data name="Unavailable source" xml:space="preserve">
     <value>Unavailable source</value>
   </data>
-  <data name="Only this item follows the selected source. Other items keep their own adjustment settings." xml:space="preserve">
-    <value>Only this item follows the selected source. Other items keep their own adjustment settings.</value>
-  </data>
   <data name="Adjusted from {0}" xml:space="preserve">
     <value>Adjusted from {0}</value>
   </data>
@@ -160,21 +157,6 @@
   </data>
   <data name="Contributed repeat rules use only the dates published by their provider." xml:space="preserve">
     <value>Contributed repeat rules use only the dates published by their provider.</value>
-  </data>
-  <data name="Manage scheduling rules" xml:space="preserve">
-    <value>Manage scheduling rules</value>
-  </data>
-  <data name="Stored dates are shown here so you can edit rules even when a source is unavailable or an occurrence is omitted." xml:space="preserve">
-    <value>Stored dates are shown here so you can edit rules even when a source is unavailable or an occurrence is omitted.</value>
-  </data>
-  <data name="Built-in repeat rule" xml:space="preserve">
-    <value>Built-in repeat rule</value>
-  </data>
-  <data name="Previous page" xml:space="preserve">
-    <value>Previous page</value>
-  </data>
-  <data name="Next page" xml:space="preserve">
-    <value>Next page</value>
   </data>
   <data name="The stored-series page is invalid." xml:space="preserve">
     <value>The stored-series page is invalid.</value>

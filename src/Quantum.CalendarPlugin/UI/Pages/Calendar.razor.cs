@@ -350,12 +350,7 @@ public partial class Calendar : IAsyncDisposable
 
     private async Task LoadAllCoreAsync()
     {
-        if (_showSeries)
-        {
-            await LoadSeriesCoreAsync();
-        }
-
-        // An occurrence failure must not suppress independent task and recovery reads.
+        // An occurrence failure must not suppress the task list refresh.
         await LoadVisiblePeriodCoreAsync();
         await RefreshLedgerCapabilityAsync();
         var result = await _calendarService.ListTasksAsync(new() { }, Context.Empty);

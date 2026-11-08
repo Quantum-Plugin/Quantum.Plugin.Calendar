@@ -140,9 +140,6 @@
   <data name="Unavailable source" xml:space="preserve">
     <value>来源不可用</value>
   </data>
-  <data name="Only this item follows the selected source. Other items keep their own adjustment settings." xml:space="preserve">
-    <value>仅此日程遵循所选来源，其他日程各自保留其调休设置。</value>
-  </data>
   <data name="Adjusted from {0}" xml:space="preserve">
     <value>原定日期：{0}</value>
   </data>
@@ -160,21 +157,6 @@
   </data>
   <data name="Contributed repeat rules use only the dates published by their provider." xml:space="preserve">
     <value>扩展重复规则仅使用来源插件发布的日期，日期范围以其提供的数据为准。</value>
-  </data>
-  <data name="Manage scheduling rules" xml:space="preserve">
-    <value>管理日程规则</value>
-  </data>
-  <data name="Stored dates are shown here so you can edit rules even when a source is unavailable or an occurrence is omitted." xml:space="preserve">
-    <value>此处显示存储的原日期，来源不可用或实例被取消时仍可编辑规则。</value>
-  </data>
-  <data name="Built-in repeat rule" xml:space="preserve">
-    <value>内置重复规则</value>
-  </data>
-  <data name="Previous page" xml:space="preserve">
-    <value>上一页</value>
-  </data>
-  <data name="Next page" xml:space="preserve">
-    <value>下一页</value>
   </data>
   <data name="The stored-series page is invalid." xml:space="preserve">
     <value>原始日程页码无效。</value>

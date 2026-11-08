@@ -161,6 +161,7 @@ public sealed class CalendarWeekViewTests
         Assert.Equal(168, System.Text.RegularExpressions.Regex.Matches(html, "class=\"week-slot\"").Count);
         Assert.Equal(3, System.Text.RegularExpressions.Regex.Matches(html, "class=\"week-event ").Count);
         Assert.DoesNotContain("day-grid incoming-grid", html);
+        Assert.DoesNotContain("Manage scheduling rules", html);
     }
 
     [Fact]
@@ -170,6 +171,7 @@ public sealed class CalendarWeekViewTests
         Assert.Contains("day-grid incoming-grid", html);
         Assert.DoesNotContain("week-viewport", html);
         Assert.Contains("Calendar view", html);
+        Assert.DoesNotContain("Manage scheduling rules", html);
     }
 
     [Theory]
@@ -183,35 +185,18 @@ public sealed class CalendarWeekViewTests
     }
 
     [Fact]
-    public async Task RuleManagerRequestsStoredSeriesWithoutEvaluatingContributors()
-    {
-        var (page, client) = CreatePage(new(2026, 12, 31));
-        client.Items = [Entry(new(2026, 1, 1), CalendarEntryKind.Event) with { RepeatRuleId = "example.school/missing" }];
-        await Invoke(page, "ToggleSeriesAsync");
-        Assert.Equal(0, client.Queries[^1].SeriesPage);
-        Assert.Equal(DateOnly.MinValue, client.Queries[^1].StartDate);
-        Assert.Equal(DateOnly.MaxValue, client.Queries[^1].EndDate);
-        Assert.Single((CalendarEntryDetails[])Get(page, "_seriesItems")!);
-        await Invoke(page, "ToggleSeriesAsync");
-        Assert.False((bool)Get(page, "_showSeries")!);
-    }
-
-    [Fact]
-    public async Task DeletionRefreshesTasksAndStoredSeriesEvenWhenOccurrenceExpansionFails()
+    public async Task DeletionRefreshesTasksEvenWhenOccurrenceExpansionFails()
     {
         var (page, client) = CreatePage(new(2026, 12, 31));
         var task = Entry(new(2026, 12, 31), CalendarEntryKind.Task);
         var unresolved = Entry(task.Date, CalendarEntryKind.Event) with { RepeatRuleId = "example.school/missing" };
         client.Items = [task, unresolved];
         Set(page, "_tasks", new[] { task });
-        await Invoke(page, "ToggleSeriesAsync");
-        Assert.Equal(2, ((CalendarEntryDetails[])Get(page, "_seriesItems")!).Length);
-        client.FailExpandedQueries = true;
+        client.FailQueries = true;
         await Invoke(page, "DeleteAsync", task.Id, true);
         await Invoke(page, "DeleteAsync", task.Id, true);
         Assert.Empty((IReadOnlyList<CalendarEntryDetails>)Get(page, "_tasks")!);
         Assert.Empty((IReadOnlyList<CalendarEntryDetails>)Get(page, "_items")!);
-        Assert.Equal(unresolved.Id, Assert.Single((CalendarEntryDetails[])Get(page, "_seriesItems")!).Id);
         Assert.Equal("Unable to load data.", Get(page, "_errorMessage"));
     }
 
@@ -226,6 +211,9 @@ public sealed class CalendarWeekViewTests
 
         Assert.Contains("value=\"example.school/term\"", html);
         Assert.DoesNotContain("value=\"Daily\"", html);
+        Assert.Contains("Adjustment source", html);
+        Assert.Contains("Keep original dates", html);
+        Assert.DoesNotContain("Only this item follows the selected source.", html);
     }
 
     internal static async Task<string> RenderViewAsync(bool week, bool collision = false, bool editor = false)
@@ -287,7 +275,6 @@ public sealed class CalendarWeekViewTests
         public List<ListCalendarEntriesRequest> Queries { get; } = [];
         public CalendarEntryDetails[] Items { get; set; } = [];
         public bool FailQueries { get; set; }
-        public bool FailExpandedQueries { get; set; }
         public UpdateCalendarEventRequest? LastUpdate { get; private set; }
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
@@ -296,7 +283,7 @@ public sealed class CalendarWeekViewTests
                 case "ListEntriesAsync":
                     var request = (ListCalendarEntriesRequest)args![0]!;
                     Queries.Add(request);
-                    return Task.FromResult<Result<CalendarEntryDetails[]>>(FailQueries || (FailExpandedQueries && request.SeriesPage is null) ? Result.Fail("unavailable", "Unable to load data.") : Result.Success(Items.Where(item => item.Date >= request.StartDate && item.Date <= request.EndDate).ToArray()));
+                    return Task.FromResult<Result<CalendarEntryDetails[]>>(FailQueries ? Result.Fail("unavailable", "Unable to load data.") : Result.Success(Items.Where(item => item.Date >= request.StartDate && item.Date <= request.EndDate).ToArray()));
                 case "GetEntryAsync":
                     var lookup = (CalendarEntryRequest)args![0]!;
                     return Task.FromResult(QuantumRequestResult<CalendarEntryLookup>.Answer(new CalendarEntryLookup { Entry = Items.SingleOrDefault(item => item.Id == lookup.Id) }));

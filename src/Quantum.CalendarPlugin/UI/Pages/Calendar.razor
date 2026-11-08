@@ -337,27 +337,6 @@
             </section>
         </div>
     </div>
-    <section class="scheduling-manager">
-        <button type="button" class="today-button" aria-expanded="@(_showSeries ? "true" : "false")" disabled="@_isBusy" @onclick="ToggleSeriesAsync">@L["Manage scheduling rules"]</button>
-        @if (_showSeries)
-        {
-            <p class="recurrence-help">@L["Stored dates are shown here so you can edit rules even when a source is unavailable or an occurrence is omitted."]</p>
-            <ul>
-                @foreach (var series in _seriesItems)
-                {
-                    <li @key="series.Id">
-                        <button type="button" disabled="@_isBusy" @onclick="() => BeginEdit(series)">@series.Title · @series.Date.ToString("d", CultureInfo.CurrentCulture)</button>
-                        <span>@(series.RepeatRuleId ?? L["Built-in repeat rule"].Value) · @(series.AdjustmentRuleId ?? L["Keep original dates"].Value)</span>
-                    </li>
-                }
-            </ul>
-            <div>
-                <button type="button" disabled="@(_isBusy || _seriesPage == 0)" @onclick="() => ChangeSeriesPageAsync(-1)">@L["Previous page"]</button>
-                <span>@(_seriesPage + 1)</span>
-                <button type="button" disabled="@(_isBusy || _seriesItems.Length < 100 || _seriesPage >= 100000)" @onclick="() => ChangeSeriesPageAsync(1)">@L["Next page"]</button>
-            </div>
-        }
-    </section>
     <dialog class="entry-dialog" @ref="_editorDialog" aria-labelledby="@_editorTitleId">
         @if (_isEditorOpen)
         {
@@ -495,7 +474,6 @@
                             }
                         </select>
                     </label>
-                    <p class="recurrence-help">@L["Only this item follows the selected source. Other items keep their own adjustment settings."]</p>
                 </fieldset>
                 <label>
                     <span>@L["Notes"]</span>
