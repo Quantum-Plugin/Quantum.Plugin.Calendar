@@ -2,6 +2,13 @@
 
 [English](../en/releases.md) · [项目说明](README.md)
 
+## 5.0.1
+
+- 重复和调休收进编辑器内默认折叠的「高级设置」。日程与待办的类型切换仅在新建时显示。撤掉独立规则面板和重复说明，调休选项只显示来源名称。
+- 月视图显示上月、下月日期格内的日程和待办，并淡化这些事项。月度统计仍按当前月份计算。
+- 在使用 SDK `0.3.0-rc.3` 的宿主上升级。此版本沿用 5.0.0 的数据结构和公开契约。如果升级后出现问题，可在同一宿主上使用现有数据重新安装 5.0.0。
+- 参见[评审与验证](https://github.com/Quantum-Plugin/Quantum.Plugin.Calendar/pull/6)和[发布记录](https://github.com/Quantum-Plugin/Quantum.Plugin.Calendar/releases/tag/v5.0.1)。
+
 ## 5.0.0
 
 - 新增中立的第 1 版重复规则和调休扩展点，支持每条日程独立选择、贡献生命周期监听及桌面选择。日历不包含法定、学校或公司政策。结构定义和示例见[日程扩展](scheduling-extensions.md)。

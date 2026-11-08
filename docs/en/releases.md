@@ -2,6 +2,13 @@
 
 [简体中文](../zh-CN/releases.md) · [Project guide](README.md)
 
+## 5.0.1
+
+- Move repeat and adjustment controls into the editor’s collapsed Advanced settings. The event and task switch appears when creating an entry. Remove the standalone rules panel and repeated help text. Adjustment options show the source name.
+- Show events and tasks on adjacent-month dates in the month grid, with a subdued style. Monthly totals cover the selected month.
+- Upgrade on a host running SDK `0.3.0-rc.3`. The release uses the 5.0.0 data schema and public contracts. If the update causes a problem, reinstall 5.0.0 on the same host with the existing data.
+- See the [review and verification](https://github.com/Quantum-Plugin/Quantum.Plugin.Calendar/pull/6) and the [release record](https://github.com/Quantum-Plugin/Quantum.Plugin.Calendar/releases/tag/v5.0.1).
+
 ## 5.0.0
 
 - Add neutral, version-1 recurrence-rules and date-adjustments extension points, independent per-entry opt-in, contributor lifecycle observation and desktop selection. Calendar includes no statutory, school or company policy. See [scheduling extensions](scheduling-extensions.md) for schemas and examples.
