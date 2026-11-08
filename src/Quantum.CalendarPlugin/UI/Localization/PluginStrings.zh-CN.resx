@@ -109,8 +109,7 @@
   <data name="After occurrences" xml:space="preserve"><value>指定次数</value></data>
   <data name="Last occurrence date (inclusive)" xml:space="preserve"><value>最后发生日期（含当天）</value></data>
   <data name="Total occurrences" xml:space="preserve"><value>总次数</value></data>
-  <data name="The start date must match the repeat rule. Missing dates are skipped. Weekdays means Monday-Friday, without holiday adjustments." xml:space="preserve"><value>起始日期须符合重复规则。不存在的日期会跳过。工作日指周一至周五，不作节假日调休调整。</value></data>
-  <data name="Repeating event. Editing or deleting affects the entire series." xml:space="preserve"><value>重复日程：编辑或删除将作用于整个系列。</value></data>
+  <data name="Advanced settings" xml:space="preserve"><value>高级设置</value></data>
   <data name="The recurrence rule is invalid." xml:space="preserve"><value>重复规则无效。</value></data>
   <data name="The recurrence options do not match the entry type or repeat pattern." xml:space="preserve"><value>重复选项与条目类型或重复模式不匹配。</value></data>
   <data name="The series start date must match the recurrence rule." xml:space="preserve"><value>系列起始日期须符合重复规则。</value></data>
@@ -154,9 +153,6 @@
   </data>
   <data name="The scheduling contribution ID is invalid." xml:space="preserve">
     <value>日程扩展标识无效。</value>
-  </data>
-  <data name="Contributed repeat rules use only the dates published by their provider." xml:space="preserve">
-    <value>扩展重复规则仅使用来源插件发布的日期，日期范围以其提供的数据为准。</value>
   </data>
   <data name="The stored-series page is invalid." xml:space="preserve">
     <value>原始日程页码无效。</value>

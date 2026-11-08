@@ -172,6 +172,7 @@ public sealed class CalendarWeekViewTests
         Assert.DoesNotContain("week-viewport", html);
         Assert.Contains("Calendar view", html);
         Assert.DoesNotContain("Manage scheduling rules", html);
+        Assert.DoesNotContain("Repeating event. Editing or deleting affects the entire series.", html);
     }
 
     [Theory]
@@ -200,23 +201,47 @@ public sealed class CalendarWeekViewTests
         Assert.Equal("Unable to load data.", Get(page, "_errorMessage"));
     }
 
-    [Fact]
-    public async Task EditorRendersBuiltInAndExternalRulesFromOneContributionCatalog()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(CalendarEntryKind.Event)]
+    [InlineData(CalendarEntryKind.Task)]
+    public async Task EditorKeepsSchedulingControlsInCollapsedAdvancedSettings(CalendarEntryKind? existingKind)
     {
-        var html = await RenderViewAsync(false, editor: true);
-        foreach (var id in CalendarBuiltInRecurrence.Rules.Keys)
+        var html = await RenderViewAsync(false, editor: true, existingKind: existingKind);
+        if (existingKind is null)
         {
-            Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, $"value=\"{id}\""));
+            Assert.Contains("class=\"kind-switch\"", html);
+        }
+        else
+        {
+            Assert.DoesNotContain("class=\"kind-switch\"", html);
         }
 
-        Assert.Contains("value=\"example.school/term\"", html);
-        Assert.DoesNotContain("value=\"Daily\"", html);
-        Assert.Contains("Adjustment source", html);
-        Assert.Contains("Keep original dates", html);
+        var drawer = Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, """<details\b[^>]*\bclass="advanced-settings"[^>]*>[\s\S]*?</details>""")).Value;
+        Assert.DoesNotMatch("""\sopen(?:\s|=|$)""", drawer[..drawer.IndexOf('>')]);
+        Assert.Matches("""<summary\b[^>]*>Advanced settings</summary>""", drawer);
+        Assert.Contains("Adjustment source", drawer);
+        Assert.Contains("Keep original dates", drawer);
         Assert.DoesNotContain("Only this item follows the selected source.", html);
+        Assert.DoesNotContain("The start date must match the repeat rule.", html);
+        Assert.DoesNotContain("Repeating event. Editing or deleting affects the entire series.", html);
+        if (existingKind == CalendarEntryKind.Task)
+        {
+            Assert.DoesNotContain("Repeat pattern", drawer);
+            return;
+        }
+
+        foreach (var id in CalendarBuiltInRecurrence.Rules.Keys)
+        {
+            var option = $"""<option\b[^>]*\bvalue="{System.Text.RegularExpressions.Regex.Escape(id)}"[^>]*>""";
+            Assert.Single(System.Text.RegularExpressions.Regex.Matches(drawer, option));
+        }
+
+        Assert.Contains("value=\"example.school/term\"", drawer);
+        Assert.DoesNotContain("value=\"Daily\"", drawer);
     }
 
-    internal static async Task<string> RenderViewAsync(bool week, bool collision = false, bool editor = false)
+    internal static async Task<string> RenderViewAsync(bool week, bool collision = false, bool editor = false, CalendarEntryKind? existingKind = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -241,7 +266,8 @@ public sealed class CalendarWeekViewTests
 
         services.AddSingleton(client);
         services.AddSingleton<IJSRuntime, UnusedJavaScript>();
-        services.AddSingleton<IComponentActivator>(provider => new WeekActivator(provider, week, editor));
+        var existingEntry = existingKind is { } kind ? fake.Items.First(item => item.Kind == kind) : null;
+        services.AddSingleton<IComponentActivator>(provider => new WeekActivator(provider, week, editor, existingEntry));
         await using var provider = services.BuildServiceProvider();
         await using var renderer = new HtmlRenderer(provider, provider.GetRequiredService<ILoggerFactory>());
         return await renderer.Dispatcher.InvokeAsync(async () => (await renderer.RenderComponentAsync<CalendarPage>()).ToHtmlString());
@@ -302,7 +328,7 @@ public sealed class CalendarWeekViewTests
         }
     }
 
-    private sealed class WeekActivator(IServiceProvider provider, bool week, bool editor) : IComponentActivator
+    private sealed class WeekActivator(IServiceProvider provider, bool week, bool editor, CalendarEntryDetails? existingEntry) : IComponentActivator
     {
         public IComponent CreateInstance(Type componentType)
         {
@@ -312,7 +338,14 @@ public sealed class CalendarWeekViewTests
                 Set(page, "_selectedDate", new DateOnly(2026, 12, 31));
                 Set(page, "_visibleMonth", new DateOnly(2026, 12, 1));
                 Set(page, "_isWeekView", week);
-                Set(page, "_isEditorOpen", editor);
+                if (existingEntry is not null)
+                {
+                    typeof(CalendarPage).GetMethod("BeginEdit", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(page, [existingEntry]);
+                }
+                else
+                {
+                    Set(page, "_isEditorOpen", editor);
+                }
             }
 
             return component;

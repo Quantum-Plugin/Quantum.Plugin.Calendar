@@ -587,6 +587,19 @@ textarea:focus-visible {
   font-weight: 500;
 }
 
+.advanced-settings {
+  border-top: 1px solid var(--line);
+}
+.advanced-settings > summary {
+  cursor: pointer;
+  font-size: 13px;
+  padding: 10px 0;
+}
+.advanced-settings-fields {
+  display: grid;
+  gap: 10px;
+}
+
 .task-board {
   display: flex;
   flex-direction: column;
