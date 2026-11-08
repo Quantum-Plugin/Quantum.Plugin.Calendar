@@ -135,6 +135,22 @@ public sealed class CalendarRecurrenceTests
         Assert.ThrowsAny<OperationCanceledException>(() => CalendarRecurrence.Expand(entry, entry.Date, entry.Date.AddDays(5), cancelled.Token).ToArray());
     }
 
+    [Fact]
+    public void ContributedRuleIdentifiersAndInvalidOptionsAreAtomic()
+    {
+        var entry = Event(new(2026, 11, 6));
+        entry.SetRecurrence(CalendarRepeatPattern.None, count: 2, ruleId: "example.school/term");
+        entry.SetAdjustment("example.company/shifts");
+        Assert.Throws<DomainException>(() => entry.SetRecurrence(CalendarRepeatPattern.Daily, weekdays: CalendarWeekdays.Monday, ruleId: "example.school/term"));
+        Assert.Throws<DomainException>(() => entry.SetAdjustment("invalid"));
+        Assert.Throws<DomainException>(() => entry.Update("Changed", "", CalendarEntryKind.Event, entry.Date, entry.StartTime, entry.EndTime, "green", DateTimeOffset.UtcNow, adjustmentRuleId: "bad/id/extra"));
+        Assert.Equal("Event", entry.Title);
+        Assert.Equal("example.school/term", entry.RepeatRuleId);
+        Assert.Equal("example.company/shifts", entry.AdjustmentRuleId);
+        var task = CalendarEntry.Create("Task", "", CalendarEntryKind.Task, entry.Date, entry.StartTime, null, "blue", TimeProvider.System);
+        Assert.Throws<DomainException>(() => task.SetRecurrence(CalendarRepeatPattern.None, ruleId: "example.school/term"));
+    }
+
     private static CalendarEntry Event(DateOnly date) => CalendarEntry.Create("Event", "", CalendarEntryKind.Event, date, new(9, 0), new(10, 0), "blue", TimeProvider.System);
     private static DateOnly[] Dates(CalendarEntry entry, DateOnly start, DateOnly end) => CalendarRecurrence.Expand(entry, start, end).ToArray();
 }

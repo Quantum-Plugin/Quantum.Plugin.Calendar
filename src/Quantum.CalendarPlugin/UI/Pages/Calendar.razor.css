@@ -1091,3 +1091,33 @@ textarea:focus-visible {
     min-height: 320px;
   }
 }
+
+.scheduling-manager {
+  background: white;
+  border-radius: 16px;
+  margin-top: 16px;
+  padding: 16px;
+}
+.scheduling-manager ul {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+.scheduling-manager li {
+  display: grid;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+.scheduling-manager li button {
+  text-align: start;
+}
+.scheduling-manager li span {
+  color: #6b7280;
+  font-size: 12px;
+}
+.scheduling-manager > div {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}

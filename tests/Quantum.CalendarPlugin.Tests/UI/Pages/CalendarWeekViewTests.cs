@@ -172,7 +172,63 @@ public sealed class CalendarWeekViewTests
         Assert.Contains("Calendar view", html);
     }
 
-    internal static async Task<string> RenderViewAsync(bool week)
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AdjustedOccurrencesOnTheSameDayRenderAsSeparateCards(bool week)
+    {
+        var html = await RenderViewAsync(week, collision: true);
+        Assert.Equal(week ? 4 : 3, System.Text.RegularExpressions.Regex.Matches(html, week ? "class=\"week-event " : "class=\"agenda-entry ").Count);
+        Assert.Contains("Adjusted from", html);
+    }
+
+    [Fact]
+    public async Task RuleManagerRequestsStoredSeriesWithoutEvaluatingContributors()
+    {
+        var (page, client) = CreatePage(new(2026, 12, 31));
+        client.Items = [Entry(new(2026, 1, 1), CalendarEntryKind.Event) with { RepeatRuleId = "example.school/missing" }];
+        await Invoke(page, "ToggleSeriesAsync");
+        Assert.Equal(0, client.Queries[^1].SeriesPage);
+        Assert.Equal(DateOnly.MinValue, client.Queries[^1].StartDate);
+        Assert.Equal(DateOnly.MaxValue, client.Queries[^1].EndDate);
+        Assert.Single((CalendarEntryDetails[])Get(page, "_seriesItems")!);
+        await Invoke(page, "ToggleSeriesAsync");
+        Assert.False((bool)Get(page, "_showSeries")!);
+    }
+
+    [Fact]
+    public async Task DeletionRefreshesTasksAndStoredSeriesEvenWhenOccurrenceExpansionFails()
+    {
+        var (page, client) = CreatePage(new(2026, 12, 31));
+        var task = Entry(new(2026, 12, 31), CalendarEntryKind.Task);
+        var unresolved = Entry(task.Date, CalendarEntryKind.Event) with { RepeatRuleId = "example.school/missing" };
+        client.Items = [task, unresolved];
+        Set(page, "_tasks", new[] { task });
+        await Invoke(page, "ToggleSeriesAsync");
+        Assert.Equal(2, ((CalendarEntryDetails[])Get(page, "_seriesItems")!).Length);
+        client.FailExpandedQueries = true;
+        await Invoke(page, "DeleteAsync", task.Id, true);
+        await Invoke(page, "DeleteAsync", task.Id, true);
+        Assert.Empty((IReadOnlyList<CalendarEntryDetails>)Get(page, "_tasks")!);
+        Assert.Empty((IReadOnlyList<CalendarEntryDetails>)Get(page, "_items")!);
+        Assert.Equal(unresolved.Id, Assert.Single((CalendarEntryDetails[])Get(page, "_seriesItems")!).Id);
+        Assert.Equal("Unable to load data.", Get(page, "_errorMessage"));
+    }
+
+    [Fact]
+    public async Task EditorRendersBuiltInAndExternalRulesFromOneContributionCatalog()
+    {
+        var html = await RenderViewAsync(false, editor: true);
+        foreach (var id in CalendarBuiltInRecurrence.Rules.Keys)
+        {
+            Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, $"value=\"{id}\""));
+        }
+
+        Assert.Contains("value=\"example.school/term\"", html);
+        Assert.DoesNotContain("value=\"Daily\"", html);
+    }
+
+    internal static async Task<string> RenderViewAsync(bool week, bool collision = false, bool editor = false)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -180,9 +236,24 @@ public sealed class CalendarWeekViewTests
         var client = DispatchProxy.Create<ICalendarRpcServiceClient, WeekClient>();
         var fake = (WeekClient)(object)client;
         fake.Items = [Entry(new(2026, 12, 31), CalendarEntryKind.Event) with { Title = "Planning", RepeatPattern = CalendarRepeatPattern.Weekly, SeriesStartDate = new(2026, 1, 1), EndTime = new(10, 30) }, Entry(new(2026, 12, 31), CalendarEntryKind.Event) with { Title = "Year-end review", StartTime = new(9, 30), EndTime = new(11, 0), Style = "green" }, Entry(new(2027, 1, 1), CalendarEntryKind.Event) with { Title = "Planning", Style = "coral" }, Entry(new(2027, 1, 1), CalendarEntryKind.Task) with { Title = "Send notes" }];
+        if (collision)
+        {
+            fake.Items[0] = fake.Items[0] with { OriginalDate = new(2026, 12, 30) };
+            fake.Items = [.. fake.Items, fake.Items[0] with { OriginalDate = new(2026, 12, 29) }];
+        }
+
+        if (editor)
+        {
+            var extensions = new SchedulingExtensionHost();
+            var scheduling = new Quantum.OfficialPlugins.Calendar.CalendarSchedulingExtensions(extensions);
+            scheduling.Start();
+            extensions.Publish(Quantum.OfficialPlugins.Calendar.CalendarSchedulingExtensions.RecurrencePoint, SchedulingExtensionHost.Contribution("example.school", "term", """{"title":"Teaching term","dates":["2026-11-06"]}"""));
+            services.AddSingleton(scheduling);
+        }
+
         services.AddSingleton(client);
         services.AddSingleton<IJSRuntime, UnusedJavaScript>();
-        services.AddSingleton<IComponentActivator>(provider => new WeekActivator(provider, week));
+        services.AddSingleton<IComponentActivator>(provider => new WeekActivator(provider, week, editor));
         await using var provider = services.BuildServiceProvider();
         await using var renderer = new HtmlRenderer(provider, provider.GetRequiredService<ILoggerFactory>());
         return await renderer.Dispatcher.InvokeAsync(async () => (await renderer.RenderComponentAsync<CalendarPage>()).ToHtmlString());
@@ -216,6 +287,7 @@ public sealed class CalendarWeekViewTests
         public List<ListCalendarEntriesRequest> Queries { get; } = [];
         public CalendarEntryDetails[] Items { get; set; } = [];
         public bool FailQueries { get; set; }
+        public bool FailExpandedQueries { get; set; }
         public UpdateCalendarEventRequest? LastUpdate { get; private set; }
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
@@ -224,7 +296,14 @@ public sealed class CalendarWeekViewTests
                 case "ListEntriesAsync":
                     var request = (ListCalendarEntriesRequest)args![0]!;
                     Queries.Add(request);
-                    return Task.FromResult<Result<CalendarEntryDetails[]>>(FailQueries ? Result.Fail("unavailable", "Unable to load data.") : Result.Success(Items.Where(item => item.Date >= request.StartDate && item.Date <= request.EndDate).ToArray()));
+                    return Task.FromResult<Result<CalendarEntryDetails[]>>(FailQueries || (FailExpandedQueries && request.SeriesPage is null) ? Result.Fail("unavailable", "Unable to load data.") : Result.Success(Items.Where(item => item.Date >= request.StartDate && item.Date <= request.EndDate).ToArray()));
+                case "GetEntryAsync":
+                    var lookup = (CalendarEntryRequest)args![0]!;
+                    return Task.FromResult(QuantumRequestResult<CalendarEntryLookup>.Answer(new CalendarEntryLookup { Entry = Items.SingleOrDefault(item => item.Id == lookup.Id) }));
+                case "DeleteTaskAsync":
+                    var deleted = (CalendarEntryRequest)args![0]!;
+                    Items = Items.Where(item => item.Id != deleted.Id).ToArray();
+                    return Task.FromResult(Result.Success());
                 case "ListTasksAsync":
                     return Task.FromResult(Result.Success(Items.Where(item => item.Kind == CalendarEntryKind.Task).ToArray()));
                 case "UpdateEventAsync":
@@ -236,7 +315,7 @@ public sealed class CalendarWeekViewTests
         }
     }
 
-    private sealed class WeekActivator(IServiceProvider provider, bool week) : IComponentActivator
+    private sealed class WeekActivator(IServiceProvider provider, bool week, bool editor) : IComponentActivator
     {
         public IComponent CreateInstance(Type componentType)
         {
@@ -246,6 +325,7 @@ public sealed class CalendarWeekViewTests
                 Set(page, "_selectedDate", new DateOnly(2026, 12, 31));
                 Set(page, "_visibleMonth", new DateOnly(2026, 12, 1));
                 Set(page, "_isWeekView", week);
+                Set(page, "_isEditorOpen", editor);
             }
 
             return component;

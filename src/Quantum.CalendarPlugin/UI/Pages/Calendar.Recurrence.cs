@@ -6,30 +6,19 @@ namespace Quantum.OfficialPlugins.Calendar.UI.Pages;
 public partial class Calendar
 {
     private static readonly DayOfWeek[] RepeatDays = [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday];
-    private string RepeatLabel(RepeatPreset preset) => L[preset switch
-    {
-        RepeatPreset.None => "Does not repeat",
-        RepeatPreset.Daily => "Every day",
-        RepeatPreset.Weekdays => "Every weekday (Monday-Friday)",
-        RepeatPreset.Weekly => "Every week",
-        RepeatPreset.Biweekly => "Every two weeks",
-        RepeatPreset.Monthly => "Every month on the same date",
-        RepeatPreset.MonthlyLastDay => "Every month on the last day",
-        RepeatPreset.MonthlyWeekday => "Every month on an ordinal weekday",
-        _ => "Every year"
-    }];
+    private string RepeatLabel(CalendarRepeatRule rule) => CalendarBuiltInRecurrence.Rules.ContainsKey(rule.Id) ? L[rule.Title].Value : $"{rule.Title} ({rule.Id})";
 
-    private enum RepeatPreset
+    private void ChangeRepeatRule(Microsoft.AspNetCore.Components.ChangeEventArgs args)
     {
-        None,
-        Daily,
-        Weekdays,
-        Weekly,
-        Biweekly,
-        Monthly,
-        MonthlyWeekday,
-        MonthlyLastDay,
-        Yearly
+        var id = args.Value?.ToString();
+        if (string.IsNullOrEmpty(id))
+        {
+            _draft.SelectRepeatRule(null);
+        }
+        else if (SchedulingSnapshot.RepeatRules.TryGetValue(id, out var rule))
+        {
+            _draft.SelectRepeatRule(rule);
+        }
     }
 
     private enum RepeatEnd
@@ -41,29 +30,36 @@ public partial class Calendar
 
     private sealed partial class EntryDraft
     {
+        public string? RepeatRuleId { get; set; }
+        public string? AdjustmentRuleId { get; set; }
+        public string RepeatSelection => RepeatRuleId ?? CalendarBuiltInRecurrence.FromLegacy(RepeatPattern, RepeatInterval)?.Id ?? string.Empty;
+
+        public void SelectRepeatRule(CalendarRepeatRule? rule)
+        {
+            RepeatRuleId = rule?.Id;
+            RepeatPattern = rule?.Pattern ?? CalendarRepeatPattern.None;
+            RepeatInterval = rule?.Interval ?? 1;
+            RepeatWeekdays = CalendarWeekdays.None;
+            RepeatWeekOfMonth = null;
+            if (rule is null)
+            {
+                RepeatUntil = null;
+                RepeatCount = null;
+            }
+        }
+
+        public string AdjustmentSelection
+        {
+            get => AdjustmentRuleId ?? string.Empty;
+            set => AdjustmentRuleId = string.IsNullOrEmpty(value) ? null : value;
+        }
+
         public CalendarRepeatPattern RepeatPattern { get; set; }
         public int RepeatInterval { get; set; } = 1;
         public CalendarWeekdays RepeatWeekdays { get; set; }
         public int? RepeatWeekOfMonth { get; set; }
         public DateOnly? RepeatUntil { get; set; }
         public int? RepeatCount { get; set; }
-        public RepeatPreset Preset
-        {
-            get => RepeatPattern == CalendarRepeatPattern.Weekly && RepeatInterval == 2 ? RepeatPreset.Biweekly : Enum.Parse<RepeatPreset>(RepeatPattern.ToString());
-            set
-            {
-                RepeatPattern = value == RepeatPreset.Biweekly ? CalendarRepeatPattern.Weekly : Enum.Parse<CalendarRepeatPattern>(value.ToString());
-                RepeatInterval = value == RepeatPreset.Biweekly ? 2 : 1;
-                RepeatWeekdays = CalendarWeekdays.None;
-                RepeatWeekOfMonth = null;
-                if (value == RepeatPreset.None)
-                {
-                    RepeatUntil = null;
-                    RepeatCount = null;
-                }
-            }
-        }
-
         public RepeatEnd End
         {
             get => RepeatUntil is not null ? RepeatEnd.OnDate : RepeatCount is not null ? RepeatEnd.AfterCount : RepeatEnd.Never;
@@ -85,6 +81,8 @@ public partial class Calendar
             StartTime = StartTime,
             EndTime = EndTime,
             Style = Style,
+            RepeatRuleId = RepeatRuleId,
+            AdjustmentRuleId = AdjustmentRuleId,
             RepeatPattern = RepeatPattern,
             RepeatInterval = RepeatInterval,
             RepeatWeekdays = RepeatWeekdays,
@@ -99,7 +97,8 @@ public partial class Calendar
             Notes = Notes,
             Date = Date,
             StartTime = StartTime,
-            Style = Style
+            Style = Style,
+            AdjustmentRuleId = AdjustmentRuleId
         };
     }
 }

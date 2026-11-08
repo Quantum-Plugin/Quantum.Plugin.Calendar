@@ -48,7 +48,7 @@ public sealed class CalendarMobilePages : ICalendarMobilePages
 
             foreach (var item in visible)
             {
-                var id = item.Id.ToString("N");
+                var id = $"{item.Id:N}-{(item.OriginalDate ?? item.Date).DayNumber}";
                 var detail = Ui.VStack("detail-" + id, Ui.Text("item-" + id, item.Title), Ui.Text("time-" + id, $"{item.Date:MM-dd} · {item.StartTime:HH:mm}").Appearance("caption"));
                 if (item.Kind == CalendarEntryKind.Task && !item.IsCompleted)
                 {

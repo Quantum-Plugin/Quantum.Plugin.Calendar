@@ -25,3 +25,5 @@ Preserve existing [CLR](glossary.md#clr) names, named requests, route components
 - [SaveCalendarEntryRequest.cs](../../src/Quantum.CalendarPlugin/Contract/Requests/SaveCalendarEntryRequest.cs)
 - [SetCalendarEntryCompletedRequest.cs](../../src/Quantum.CalendarPlugin/Contract/Requests/SetCalendarEntryCompletedRequest.cs)
 - [UpdateCalendarEntryRequest.cs](../../src/Quantum.CalendarPlugin/Contract/Requests/UpdateCalendarEntryRequest.cs)
+
+[Scheduling extension contracts](scheduling-extensions.md)

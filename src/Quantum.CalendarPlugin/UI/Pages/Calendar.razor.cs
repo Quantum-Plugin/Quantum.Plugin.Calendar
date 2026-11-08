@@ -18,10 +18,11 @@ public partial class Calendar : IAsyncDisposable
     private readonly string _editorTitleId = $"calendar-editor-{Guid.NewGuid():N}";
     private readonly ICalendarRpcServiceClient _calendarService;
     private static readonly string[] Styles = ["violet", "blue", "coral", "green"];
-    public Calendar(ICalendarRpcServiceClient calendarService, Quantum.Plugin.Abstraction.IQuantumRequester? invoker = null)
+    public Calendar(ICalendarRpcServiceClient calendarService, Quantum.Plugin.Abstraction.IQuantumRequester? invoker = null, CalendarSchedulingExtensions? scheduling = null)
     {
         _calendarService = calendarService;
         _invoker = invoker;
+        _scheduling = scheduling;
     }
 
     private static IReadOnlyList<string> Weekdays
@@ -84,7 +85,15 @@ public partial class Calendar : IAsyncDisposable
         }
     }
 
-    protected override Task OnInitializedAsync() => ExecuteAsync(LoadAllCoreAsync);
+    protected override Task OnInitializedAsync()
+    {
+        if (_scheduling is not null)
+        {
+            _scheduling.Changed += SchedulingChanged;
+        }
+
+        return ExecuteAsync(LoadAllCoreAsync);
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!_isEditorOpen && _ledgerViewing is null && !_isWeekView && _editorModule is null)
@@ -103,6 +112,12 @@ public partial class Calendar : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _disposed = true;
+        if (_scheduling is not null)
+        {
+            _scheduling.Changed -= SchedulingChanged;
+        }
+
         if (_editorModule is null)
         {
             return;
@@ -212,6 +227,7 @@ public partial class Calendar : IAsyncDisposable
         if (kind == CalendarEntryKind.Task)
         {
             _draft.EndTime = null;
+            _draft.RepeatRuleId = null;
             _draft.RepeatPattern = CalendarRepeatPattern.None;
             _draft.RepeatInterval = 1;
             _draft.RepeatWeekdays = CalendarWeekdays.None;
@@ -255,7 +271,7 @@ public partial class Calendar : IAsyncDisposable
                 }
             }
 
-            _selectedDate = _isWeekView && _editingId is not null && _draft.RepeatPattern != CalendarRepeatPattern.None ? _selectedDate : _draft.Date;
+            _selectedDate = _isWeekView && _editingId is not null && (_draft.RepeatPattern != CalendarRepeatPattern.None || _draft.RepeatRuleId is not null) ? _selectedDate : _draft.Date;
             SetVisibleMonth(new DateOnly(_selectedDate.Year, _selectedDate.Month, 1));
             CancelEdit();
             await LoadAllCoreAsync();
@@ -334,19 +350,16 @@ public partial class Calendar : IAsyncDisposable
 
     private async Task LoadAllCoreAsync()
     {
-        if (!await LoadVisiblePeriodCoreAsync())
+        if (_showSeries)
         {
-            return;
+            await LoadSeriesCoreAsync();
         }
 
+        // An occurrence failure must not suppress independent task and recovery reads.
+        await LoadVisiblePeriodCoreAsync();
         await RefreshLedgerCapabilityAsync();
         var result = await _calendarService.ListTasksAsync(new() { }, Context.Empty);
-        if (!IsSuccessful(result))
-        {
-            return;
-        }
-
-        _tasks = result.Value!;
+        _tasks = IsSuccessful(result) ? result.Value! : [];
     }
 
     private bool IsSuccessful(IResult result)
@@ -383,6 +396,11 @@ public partial class Calendar : IAsyncDisposable
         finally
         {
             _isBusy = false;
+            if (_schedulingRefreshPending && !_disposed)
+            {
+                _schedulingRefreshPending = false;
+                SchedulingChanged();
+            }
         }
     }
 
@@ -429,7 +447,9 @@ public partial class Calendar : IAsyncDisposable
             Title = item.Title,
             Notes = item.Notes,
             Kind = item.Kind,
-            Date = item.RepeatPattern == CalendarRepeatPattern.None ? item.Date : item.SeriesStartDate,
+            Date = item.SeriesStartDate,
+            RepeatRuleId = item.RepeatRuleId,
+            AdjustmentRuleId = item.AdjustmentRuleId,
             RepeatPattern = item.RepeatPattern,
             RepeatInterval = item.RepeatInterval,
             RepeatWeekdays = item.RepeatWeekdays,

@@ -75,6 +75,10 @@ public partial class Calendar
         BeginEdit(item);
     }
 
-    private string WeekEntryLabel(CalendarEntryDetails item) => L["Edit {0}, {1}, {2}", item.Title, item.Date.ToString("D", CultureInfo.CurrentCulture), FormatTime(item)];
+    private string WeekEntryLabel(CalendarEntryDetails item)
+    {
+        var label = L["Edit {0}, {1}, {2}", item.Title, item.Date.ToString("D", CultureInfo.CurrentCulture), FormatTime(item)].Value;
+        return item.OriginalDate is { } original && original != item.Date ? $"{label}. {L["Adjusted from {0}", original.ToString("d", CultureInfo.CurrentCulture)]}" : label;
+    }
     private static DateOnly AddDaysClamped(DateOnly date, int days) => DateOnly.FromDayNumber(Math.Clamp(date.DayNumber + days, DateOnly.MinValue.DayNumber, DateOnly.MaxValue.DayNumber));
 }
