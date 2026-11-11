@@ -44,6 +44,13 @@ export function syncEditor(dialog, open) {
       event.preventDefault();
       dialog.querySelector('[data-editor-close]')?.click();
     });
+    dialog.addEventListener(
+      'invalid',
+      (event) => {
+        event.target.closest('details')?.setAttribute('open', '');
+      },
+      true,
+    );
     initializedDialogs.add(dialog);
   }
 

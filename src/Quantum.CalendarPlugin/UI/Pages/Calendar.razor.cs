@@ -68,10 +68,8 @@ public partial class Calendar : IAsyncDisposable
     {
         get
         {
-            var firstDay = new DateOnly(_visibleMonth.Year, _visibleMonth.Month, 1);
-            var mondayOffset = ((int)firstDay.DayOfWeek + 6) % 7;
-            var gridStart = firstDay.AddDays(-mondayOffset);
-            return [..Enumerable.Range(0, Math.Min(42, DateOnly.MaxValue.DayNumber - gridStart.DayNumber + 1)).Select(offset =>
+            var gridStart = MonthGridStartDate;
+            return [..Enumerable.Range(0, MonthGridEndDate.DayNumber - gridStart.DayNumber + 1).Select(offset =>
             {
                 var date = gridStart.AddDays(offset);
                 return new CalendarDay
@@ -337,7 +335,11 @@ public partial class Calendar : IAsyncDisposable
     private Task LoadVisiblePeriodAsync() => ExecuteAsync(LoadVisiblePeriodCoreAsync);
     private async Task<bool> LoadVisiblePeriodCoreAsync()
     {
-        var result = await _calendarService.ListEntriesAsync(new() { StartDate = VisibleStartDate, EndDate = VisibleEndDate }, Context.Empty);
+        var result = await _calendarService.ListEntriesAsync(new()
+        {
+            StartDate = _isWeekView ? WeekStartDate : MonthGridStartDate,
+            EndDate = _isWeekView ? WeekEndDate : MonthGridEndDate
+        }, Context.Empty);
         if (!IsSuccessful(result))
         {
             _items = [];
@@ -350,12 +352,7 @@ public partial class Calendar : IAsyncDisposable
 
     private async Task LoadAllCoreAsync()
     {
-        if (_showSeries)
-        {
-            await LoadSeriesCoreAsync();
-        }
-
-        // An occurrence failure must not suppress independent task and recovery reads.
+        // An occurrence failure must not suppress the task list refresh.
         await LoadVisiblePeriodCoreAsync();
         await RefreshLedgerCapabilityAsync();
         var result = await _calendarService.ListTasksAsync(new() { }, Context.Empty);

@@ -228,10 +228,6 @@
                                 {
                                     <p class="recurrence-help">@L["Adjusted from {0}", originalDate.ToString("d", CultureInfo.CurrentCulture)]</p>
                                 }
-                                @if (item.RepeatPattern != CalendarRepeatPattern.None || item.RepeatRuleId is not null)
-                                {
-                                    <p class="recurrence-help">@L["Repeating event. Editing or deleting affects the entire series."]</p>
-                                }
                                 @if (!string.IsNullOrWhiteSpace(item.Notes))
                                 {
                                     <p>@item.Notes</p>
@@ -337,27 +333,6 @@
             </section>
         </div>
     </div>
-    <section class="scheduling-manager">
-        <button type="button" class="today-button" aria-expanded="@(_showSeries ? "true" : "false")" disabled="@_isBusy" @onclick="ToggleSeriesAsync">@L["Manage scheduling rules"]</button>
-        @if (_showSeries)
-        {
-            <p class="recurrence-help">@L["Stored dates are shown here so you can edit rules even when a source is unavailable or an occurrence is omitted."]</p>
-            <ul>
-                @foreach (var series in _seriesItems)
-                {
-                    <li @key="series.Id">
-                        <button type="button" disabled="@_isBusy" @onclick="() => BeginEdit(series)">@series.Title · @series.Date.ToString("d", CultureInfo.CurrentCulture)</button>
-                        <span>@(series.RepeatRuleId ?? L["Built-in repeat rule"].Value) · @(series.AdjustmentRuleId ?? L["Keep original dates"].Value)</span>
-                    </li>
-                }
-            </ul>
-            <div>
-                <button type="button" disabled="@(_isBusy || _seriesPage == 0)" @onclick="() => ChangeSeriesPageAsync(-1)">@L["Previous page"]</button>
-                <span>@(_seriesPage + 1)</span>
-                <button type="button" disabled="@(_isBusy || _seriesItems.Length < 100 || _seriesPage >= 100000)" @onclick="() => ChangeSeriesPageAsync(1)">@L["Next page"]</button>
-            </div>
-        }
-    </section>
     <dialog class="entry-dialog" @ref="_editorDialog" aria-labelledby="@_editorTitleId">
         @if (_isEditorOpen)
         {
@@ -370,10 +345,13 @@
                 {
                     <div class="error-banner" role="alert">@_errorMessage</div>
                 }
-                <div class="kind-switch" role="group" aria-label="@L["Item type"]">
-                    <button type="button" class="@(_draft.Kind == CalendarEntryKind.Event ? "active" : null)" disabled="@(_editingId is not null)" @onclick="() => SetDraftKind(CalendarEntryKind.Event)">@L["Event"]</button>
-                    <button type="button" class="@(_draft.Kind == CalendarEntryKind.Task ? "active" : null)" disabled="@(_editingId is not null)" @onclick="() => SetDraftKind(CalendarEntryKind.Task)">@L["Task"]</button>
-                </div>
+                @if (_editingId is null)
+                {
+                    <div class="kind-switch" role="group" aria-label="@L["Item type"]">
+                        <button type="button" class="@(_draft.Kind == CalendarEntryKind.Event ? "active" : null)" @onclick="() => SetDraftKind(CalendarEntryKind.Event)">@L["Event"]</button>
+                        <button type="button" class="@(_draft.Kind == CalendarEntryKind.Task ? "active" : null)" @onclick="() => SetDraftKind(CalendarEntryKind.Task)">@L["Task"]</button>
+                    </div>
+                }
                 <label>
                     <span>@L["Title"]</span>
                     <input maxlength="120" placeholder="@L["What needs to be done?"]" autofocus @bind="_draft.Title" @bind:event="oninput" />
@@ -395,108 +373,6 @@
                         <input type="time" @bind="_draft.EndTime" />
                     </label>
                 }
-                @if (_draft.Kind == CalendarEntryKind.Event)
-                {
-                    <fieldset class="recurrence-editor">
-                        <legend>@L["Repeat"]</legend>
-                        <label>
-                            <span>@L["Repeat pattern"]</span>
-                            <select value="@_draft.RepeatSelection" @onchange="ChangeRepeatRule">
-                                <option value="">@L["Does not repeat"]</option>
-                                @foreach (var rule in SchedulingSnapshot.RepeatRules.Values.OrderBy(rule => rule.Order).ThenBy(rule => rule.Title).ThenBy(rule => rule.Id))
-                                {
-                                    <option value="@rule.Id">@RepeatLabel(rule)</option>
-                                }
-                                @if (_draft.RepeatRuleId is { } missingRepeat && !SchedulingSnapshot.RepeatRules.ContainsKey(missingRepeat))
-                                {
-                                    <option value="@missingRepeat">@L["Unavailable source"] (@missingRepeat)</option>
-                                }
-                            </select>
-                        </label>
-                        @if (_draft.RepeatPattern != CalendarRepeatPattern.None || _draft.RepeatRuleId is not null)
-                        {
-                            @if (_draft.RepeatPattern is not (CalendarRepeatPattern.None or CalendarRepeatPattern.Weekdays))
-                            {
-                                <label>
-                                    <span>@L["Repeat interval"]</span>
-                                    <input type="number" min="1" max="999" required @bind="_draft.RepeatInterval" />
-                                </label>
-                            }
-                            @if (_draft.RepeatPattern == CalendarRepeatPattern.Weekly)
-                            {
-                                <div class="repeat-days" role="group" aria-label="@L["Repeat on weekdays"]">
-                                    @foreach (var day in RepeatDays)
-                                    {
-                                        <button type="button" aria-pressed="@_draft.RepeatsOn(day)" @onclick="() => _draft.ToggleRepeatDay(day)">@CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedDayName(day)</button>
-                                    }
-                                </div>
-                            }
-                            @if (_draft.RepeatPattern == CalendarRepeatPattern.MonthlyWeekday)
-                            {
-                                <label>
-                                    <span>@L["Week of month"]</span>
-                                    <select @bind="_draft.RepeatWeekOfMonth">
-                                        <option value="">@L["Same ordinal as start date"]</option>
-                                        @for (var week = 1; week <= 5; week++)
-                                        {
-                                            <option value="@week">@week</option>
-                                        }
-                                        <option value="-1">@L["Last weekday of that name"]</option>
-                                    </select>
-                                </label>
-                            }
-                            <label>
-                                <span>@L["Ends"]</span>
-                                <select @bind="_draft.End">
-                                    <option value="@RepeatEnd.Never">@L["Never"]</option>
-                                    <option value="@RepeatEnd.OnDate">@L["On date"]</option>
-                                    <option value="@RepeatEnd.AfterCount">@L["After occurrences"]</option>
-                                </select>
-                            </label>
-                            @if (_draft.End == RepeatEnd.OnDate)
-                            {
-                                <label>
-                                    <span>@L["Last occurrence date (inclusive)"]</span>
-                                    <input type="date" required min="@_draft.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" @bind="_draft.RepeatUntil" />
-                                </label>
-                            }
-                            @if (_draft.End == RepeatEnd.AfterCount)
-                            {
-                                <label>
-                                    <span>@L["Total occurrences"]</span>
-                                    <input type="number" min="1" max="10000" required @bind="_draft.RepeatCount" />
-                                </label>
-                            }
-                            @if (_draft.RepeatRuleId is not null && _draft.RepeatPattern == CalendarRepeatPattern.None)
-                            {
-                                <p class="recurrence-help">@L["Contributed repeat rules use only the dates published by their provider."]</p>
-                            }
-                            else
-                            {
-                                <p class="recurrence-help">@L["The start date must match the repeat rule. Missing dates are skipped. Weekdays means Monday-Friday, without holiday adjustments."]</p>
-                            }
-                            <p class="recurrence-help">@L["Repeating event. Editing or deleting affects the entire series."]</p>
-                        }
-                    </fieldset>
-                }
-                <fieldset class="recurrence-editor">
-                    <legend>@L["Date adjustments"]</legend>
-                    <label>
-                        <span>@L["Adjustment source"]</span>
-                        <select @bind="_draft.AdjustmentSelection">
-                            <option value="">@L["Keep original dates"]</option>
-                            @foreach (var rule in SchedulingSnapshot.Adjustments.Values.OrderBy(rule => rule.Title).ThenBy(rule => rule.Id))
-                            {
-                                <option value="@rule.Id">@rule.Title (@rule.Id)</option>
-                            }
-                            @if (_draft.AdjustmentRuleId is { } missingAdjustment && !SchedulingSnapshot.Adjustments.ContainsKey(missingAdjustment))
-                            {
-                                <option value="@missingAdjustment">@L["Unavailable source"] (@missingAdjustment)</option>
-                            }
-                        </select>
-                    </label>
-                    <p class="recurrence-help">@L["Only this item follows the selected source. Other items keep their own adjustment settings."]</p>
-                </fieldset>
                 <label>
                     <span>@L["Notes"]</span>
                     <textarea maxlength="1000" rows="3" placeholder="@L["Add some details…"]" @bind="_draft.Notes"></textarea>
@@ -512,6 +388,103 @@
                                 @onclick="() => _draft.Style = style"></button>
                     }
                 </fieldset>
+                <details class="advanced-settings">
+                    <summary>@L["Advanced settings"]</summary>
+                    <div class="advanced-settings-fields">
+                        @if (_draft.Kind == CalendarEntryKind.Event)
+                        {
+                            <fieldset class="recurrence-editor">
+                                <legend>@L["Repeat"]</legend>
+                                <label>
+                                    <span>@L["Repeat pattern"]</span>
+                                    <select value="@_draft.RepeatSelection" @onchange="ChangeRepeatRule">
+                                        <option value="">@L["Does not repeat"]</option>
+                                        @foreach (var rule in SchedulingSnapshot.RepeatRules.Values.OrderBy(rule => rule.Order).ThenBy(rule => rule.Title).ThenBy(rule => rule.Id))
+                                        {
+                                            <option value="@rule.Id">@RepeatLabel(rule)</option>
+                                        }
+                                        @if (_draft.RepeatRuleId is { } missingRepeat && !SchedulingSnapshot.RepeatRules.ContainsKey(missingRepeat))
+                                        {
+                                            <option value="@missingRepeat">@L["Unavailable source"] (@missingRepeat)</option>
+                                        }
+                                    </select>
+                                </label>
+                                @if (_draft.RepeatPattern != CalendarRepeatPattern.None || _draft.RepeatRuleId is not null)
+                                {
+                                    @if (_draft.RepeatPattern is not (CalendarRepeatPattern.None or CalendarRepeatPattern.Weekdays))
+                                    {
+                                        <label>
+                                            <span>@L["Repeat interval"]</span>
+                                            <input type="number" min="1" max="999" required @bind="_draft.RepeatInterval" />
+                                        </label>
+                                    }
+                                    @if (_draft.RepeatPattern == CalendarRepeatPattern.Weekly)
+                                    {
+                                        <div class="repeat-days" role="group" aria-label="@L["Repeat on weekdays"]">
+                                            @foreach (var day in RepeatDays)
+                                            {
+                                                <button type="button" aria-pressed="@_draft.RepeatsOn(day)" @onclick="() => _draft.ToggleRepeatDay(day)">@CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedDayName(day)</button>
+                                            }
+                                        </div>
+                                    }
+                                    @if (_draft.RepeatPattern == CalendarRepeatPattern.MonthlyWeekday)
+                                    {
+                                        <label>
+                                            <span>@L["Week of month"]</span>
+                                            <select @bind="_draft.RepeatWeekOfMonth">
+                                                <option value="">@L["Same ordinal as start date"]</option>
+                                                @for (var week = 1; week <= 5; week++)
+                                                {
+                                                    <option value="@week">@week</option>
+                                                }
+                                                <option value="-1">@L["Last weekday of that name"]</option>
+                                            </select>
+                                        </label>
+                                    }
+                                    <label>
+                                        <span>@L["Ends"]</span>
+                                        <select @bind="_draft.End">
+                                            <option value="@RepeatEnd.Never">@L["Never"]</option>
+                                            <option value="@RepeatEnd.OnDate">@L["On date"]</option>
+                                            <option value="@RepeatEnd.AfterCount">@L["After occurrences"]</option>
+                                        </select>
+                                    </label>
+                                    @if (_draft.End == RepeatEnd.OnDate)
+                                    {
+                                        <label>
+                                            <span>@L["Last occurrence date (inclusive)"]</span>
+                                            <input type="date" required min="@_draft.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" @bind="_draft.RepeatUntil" />
+                                        </label>
+                                    }
+                                    @if (_draft.End == RepeatEnd.AfterCount)
+                                    {
+                                        <label>
+                                            <span>@L["Total occurrences"]</span>
+                                            <input type="number" min="1" max="10000" required @bind="_draft.RepeatCount" />
+                                        </label>
+                                    }
+                                }
+                            </fieldset>
+                        }
+                        <fieldset class="recurrence-editor">
+                            <legend>@L["Date adjustments"]</legend>
+                            <label>
+                                <span>@L["Adjustment source"]</span>
+                                <select @bind="_draft.AdjustmentSelection">
+                                    <option value="">@L["Keep original dates"]</option>
+                                    @foreach (var rule in SchedulingSnapshot.Adjustments.Values.OrderBy(rule => rule.Title).ThenBy(rule => rule.Id))
+                                    {
+                                        <option value="@rule.Id">@rule.Title</option>
+                                    }
+                                    @if (_draft.AdjustmentRuleId is { } missingAdjustment && !SchedulingSnapshot.Adjustments.ContainsKey(missingAdjustment))
+                                    {
+                                        <option value="@missingAdjustment">@L["Unavailable source"]</option>
+                                    }
+                                </select>
+                            </label>
+                        </fieldset>
+                    </div>
+                </details>
                 <div class="editor-actions">
                     <button type="button" disabled="@_isBusy" @onclick="CancelEdit">@L["Cancel"]</button>
                     <button type="submit" class="primary-button" disabled="@(_isBusy || string.IsNullOrWhiteSpace(_draft.Title))">

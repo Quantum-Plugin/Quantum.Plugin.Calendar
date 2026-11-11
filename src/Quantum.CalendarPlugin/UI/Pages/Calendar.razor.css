@@ -201,6 +201,9 @@ textarea:focus-visible {
   margin-top: 5px;
   width: 100%;
 }
+.day-cell.outside-month .day-entries {
+  opacity: 0.75;
+}
 .violet {
   --item-color: #6d5a96;
 }
@@ -585,6 +588,19 @@ textarea:focus-visible {
   font-size: 13px;
   min-width: 64px;
   font-weight: 500;
+}
+
+.advanced-settings {
+  border-top: 1px solid var(--line);
+}
+.advanced-settings > summary {
+  cursor: pointer;
+  font-size: 13px;
+  padding: 10px 0;
+}
+.advanced-settings-fields {
+  display: grid;
+  gap: 10px;
 }
 
 .task-board {
@@ -1090,34 +1106,4 @@ textarea:focus-visible {
     height: min(65dvh, 560px);
     min-height: 320px;
   }
-}
-
-.scheduling-manager {
-  background: white;
-  border-radius: 16px;
-  margin-top: 16px;
-  padding: 16px;
-}
-.scheduling-manager ul {
-  display: grid;
-  gap: 12px;
-  list-style: none;
-  padding: 0;
-}
-.scheduling-manager li {
-  display: grid;
-  gap: 4px;
-  overflow-wrap: anywhere;
-}
-.scheduling-manager li button {
-  text-align: start;
-}
-.scheduling-manager li span {
-  color: #6b7280;
-  font-size: 12px;
-}
-.scheduling-manager > div {
-  align-items: center;
-  display: flex;
-  gap: 12px;
 }
